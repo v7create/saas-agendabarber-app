@@ -10,6 +10,7 @@ import { Sidebar } from './components/Sidebar';
 import { auth } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
+// alteração para testar novo commit
 
 const pageTitles: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
