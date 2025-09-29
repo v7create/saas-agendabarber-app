@@ -548,8 +548,8 @@ const UpcomingAppointmentItem: React.FC<{ appointment: Appointment; onEdit: (app
     const formatUpcomingDate = (dateString: string, time: string) => {
         const today = new Date();
         const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const appointmentDate = new Date(`${dateString}T12:00:00`); // Use noon to avoid timezone issues with date changes
+        tomorrow.setDate(today.getDate() + 1);
+        const appointmentDate = new Date(`${dateString}T00:00:00Z`); // Use Z to treat as UTC and avoid timezone issues
 
         today.setHours(0, 0, 0, 0);
         tomorrow.setHours(0, 0, 0, 0);
@@ -562,7 +562,7 @@ const UpcomingAppointmentItem: React.FC<{ appointment: Appointment; onEdit: (app
             return `Amanhã, ${time}`;
         }
         
-        const date = new Date(`${dateString}T12:00:00`);
+        const date = new Date(`${dateString}T00:00:00Z`);
         return `${new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(date)}, ${time}`;
     };
 
@@ -786,26 +786,31 @@ export const AppointmentsPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const user = auth.currentUser;
-        if (!user) return;
+        const unsubscribeAuth = auth.onAuthStateChanged(user => {
+            if (user) {
+                const q = query(
+                    collection(db, `barbershops/${user.uid}/appointments`),
+                    orderBy("date"),
+                    orderBy("startTime")
+                );
 
-        const q = query(
-            collection(db, `barbershops/${user.uid}/appointments`),
-            orderBy("date"),
-            orderBy("startTime")
-        );
+                const unsubscribeFirestore = onSnapshot(q, (querySnapshot) => {
+                    const appointmentsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+                    setAppointments(appointmentsData);
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error fetching appointments:", error);
+                    setAppointments([]);
+                    setLoading(false);
+                });
 
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            const appointmentsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
-            setAppointments(appointmentsData);
-            setLoading(false);
-        }, (error) => {
-            console.error("Error fetching appointments:", error);
-            setAppointments([]); // Fallback to empty on error
-            setLoading(false);
+                return () => unsubscribeFirestore(); // Cleanup Firestore listener
+            } else {
+                setAppointments([]); // Clear appointments if user logs out or is not authenticated
+                setLoading(false);
+            }
         });
-
-        return () => unsubscribe();
+        return () => unsubscribeAuth(); // Cleanup Auth listener
     }, []);
 
     return (
@@ -893,16 +898,21 @@ export const AgendaPage: React.FC = () => {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
 
     useEffect(() => {
-        const user = auth.currentUser;
-        if (!user) return;
-        const q = query(collection(db, `barbershops/${user.uid}/appointments`), orderBy("startTime"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            setAppointments(snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as Appointment)));
-        }, (error) => {
-            console.error("Error fetching appointments:", error);
-            setAppointments([]); // Fallback to empty on error
+        const unsubscribeAuth = auth.onAuthStateChanged(user => {
+            if (user) {
+                const q = query(collection(db, `barbershops/${user.uid}/appointments`), orderBy("startTime"));
+                const unsubscribeFirestore = onSnapshot(q, (snapshot) => {
+                    setAppointments(snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as Appointment)));
+                }, (error) => {
+                    console.error("Error fetching appointments:", error);
+                    setAppointments([]);
+                });
+                return () => unsubscribeFirestore(); // Cleanup Firestore listener
+            } else {
+                setAppointments([]); // Clear appointments if user logs out or is not authenticated
+            }
         });
-        return () => unsubscribe();
+        return () => unsubscribeAuth(); // Cleanup Auth listener
     }, []);
 
     const today = new Date();
