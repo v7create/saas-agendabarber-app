@@ -50,6 +50,9 @@ const firebaseConfig = {
 // Initialize Firebase App
 const app = initializeApp(firebaseConfig);
 
+// Exporta a instância do app para uso em outros módulos (ex: App Check)
+export { app };
+
 // Initialize Auth
 export const auth = getAuth(app);
 

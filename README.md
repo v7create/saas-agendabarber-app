@@ -97,10 +97,25 @@
 
 ### Quality & Tooling
 
+- **[Zustand](https://zustand-demo.pmnd.rs/)** - State Management
 - **[Zod](https://zod.dev/)** - Validação de dados
+- **[Playwright](https://playwright.dev/)** - Testes E2E
 - **[Vitest](https://vitest.dev/)** - Testing Framework
 - **[ESLint](https://eslint.org/)** - Linting
 - **[Prettier](https://prettier.io/)** - Formatação
+
+### Current Status
+
+- ✅ **FASE 1: Segurança** - COMPLETA (Firestore Rules, App Check, Zod)
+- ✅ **FASE 2: Arquitetura** - COMPLETA (8 Stores, 8 Hooks, Service Layer, Feature-based)
+- 🚧 **FASE 3: Testes E2E** - EM PROGRESSO (95% - 20/21 testes passando)
+  - ✅ Feature 1: Autenticação (6/6 testes - 100%)
+  - ✅ Feature 2: Dashboard (4/4 testes - 100%)
+  - ✅ Feature 3: Clientes CRUD (5/5 testes - 100%)
+  - ⚠️ Feature 4: Appointments (5/6 testes - 83%)
+  - ⏳ Features 5-12: Pendentes
+
+📊 **[Ver Progresso Completo dos Testes](./docs/TESTE_E2E_PROGRESSO.md)**
 
 ---
 
@@ -201,20 +216,52 @@ agendabarber/
 
 ## 📚 Documentação
 
-A documentação completa do projeto está disponível nos seguintes arquivos:
+A documentação completa do projeto está organizada na pasta **`docs/`**:
 
-- **[EXECUTIVE_SUMMARY.md](./EXECUTIVE_SUMMARY.md)** - Resumo executivo e visão geral
-- **[REFACTORING_REPORT.md](./REFACTORING_REPORT.md)** - Análise detalhada do código
-- **[IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)** - Plano de implementação por fases
-- **[CODE_EXAMPLES.md](./CODE_EXAMPLES.md)** - Exemplos práticos de código
-- **[CONFIGURATIONS.md](./CONFIGURATIONS.md)** - Configurações do projeto
+### 📋 Documentação Principal
+- **[docs/EXECUTIVE_SUMMARY.md](./docs/EXECUTIVE_SUMMARY.md)** - Resumo executivo e visão geral
+- **[docs/STATUS_PROJETO.md](./docs/STATUS_PROJETO.md)** - Status atual do desenvolvimento
+- **[docs/ROADMAP_COMPLETO.md](./docs/ROADMAP_COMPLETO.md)** - Roadmap detalhado por fases
+
+### 🏗️ Arquitetura & Design
+- **[docs/ANALISE_COMPLETA_UI.md](./docs/ANALISE_COMPLETA_UI.md)** - Análise UI completa (19.500 palavras)
+- **[docs/FLUXO_NAVEGACAO.md](./docs/FLUXO_NAVEGACAO.md)** - Fluxos de navegação (8.200 palavras)
+- **[docs/DESCRICAO_FEATURES.md](./docs/DESCRICAO_FEATURES.md)** - Features detalhadas (23.800 palavras)
+- **[docs/ESTADOS_ESPECIAIS.md](./docs/ESTADOS_ESPECIAIS.md)** - Estados UI (15.400 palavras)
+- **[docs/RESUMO_EXECUTIVO.md](./docs/RESUMO_EXECUTIVO.md)** - Resumo técnico (3.100 palavras)
+
+### 🔧 Implementação
+- **[docs/IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md)** - Plano de implementação
+- **[docs/REFACTORING_REPORT.md](./docs/REFACTORING_REPORT.md)** - Relatório de refatoração
+- **[docs/CODE_EXAMPLES.md](./docs/CODE_EXAMPLES.md)** - Exemplos práticos de código
+- **[docs/CONFIGURATIONS.md](./docs/CONFIGURATIONS.md)** - Configurações do projeto
+- **[docs/DEPENDENCIAS.md](./docs/DEPENDENCIAS.md)** - Dependências e versões
+
+### 🧪 Testes E2E
+- **[docs/TESTE_E2E_PROGRESSO.md](./docs/TESTE_E2E_PROGRESSO.md)** - � Progresso dos testes (95% - 20/21 testes)
+- **[docs/PLAYWRIGHT_SETUP_COMPLETO.md](./docs/PLAYWRIGHT_SETUP_COMPLETO.md)** - Setup Playwright completo
+- **[docs/GUIA_MCP_PLAYWRIGHT.md](./docs/GUIA_MCP_PLAYWRIGHT.md)** - Guia MCP + Playwright
+- **[docs/COPILOT_PLAYWRIGHT_COMANDOS.md](./docs/COPILOT_PLAYWRIGHT_COMANDOS.md)** - Comandos úteis
+- **[docs/CHECKLIST_PLAYWRIGHT.md](./docs/CHECKLIST_PLAYWRIGHT.md)** - Checklist de testes
+
+### 🔒 Segurança
+- **[docs/GUIA_APP_CHECK_RECAPTCHA.md](./docs/GUIA_APP_CHECK_RECAPTCHA.md)** - Setup Firebase App Check
+- **[docs/APP_CHECK_CONFIRMACAO.md](./docs/APP_CHECK_CONFIRMACAO.md)** - Confirmação de configuração
+- **[docs/FASE_1_CONCLUIDA.md](./docs/FASE_1_CONCLUIDA.md)** - Fase de Segurança completa
+
+### 📅 Histórico de Desenvolvimento
+- **[docs/FASE_2_COMPLETO.md](./docs/FASE_2_COMPLETO.md)** - Fase 2 (Arquitetura) completa
+- **[docs/FASE_2_PROGRESSO.md](./docs/FASE_2_PROGRESSO.md)** - Progresso da Fase 2
+- **[docs/FASE_2_INICIO.md](./docs/FASE_2_INICIO.md)** - Kickoff da Fase 2
+- **[docs/REVISAO_FINAL.md](./docs/REVISAO_FINAL.md)** - Revisão final do código
+- **[docs/REFERENCIA_RAPIDA.md](./docs/REFERENCIA_RAPIDA.md)** - Referência rápida do projeto
 
 ### 📖 Guias Rápidos
 
-- [Como adicionar uma nova feature](#)
-- [Como escrever testes](#)
-- [Como fazer deploy](#)
-- [Boas práticas do projeto](#)
+- [Como executar testes E2E](./docs/COPILOT_PLAYWRIGHT_COMANDOS.md)
+- [Como configurar Firebase](./docs/GUIA_APP_CHECK_RECAPTCHA.md)
+- [Como adicionar uma nova feature](./docs/CODE_EXAMPLES.md)
+- [Boas práticas do projeto](./docs/ANALISE_COMPLETA_UI.md)
 
 ---
 
@@ -222,23 +269,21 @@ A documentação completa do projeto está disponível nos seguintes arquivos:
 
 ```bash
 # Desenvolvimento
-npm run dev              # Inicia servidor de desenvolvimento
+npm run dev              # Inicia servidor de desenvolvimento (porta 3000)
 
 # Build
 npm run build            # Build para produção
 npm run preview          # Preview do build
 
 # Qualidade
-npm run lint             # Roda ESLint
-npm run lint:fix         # Corrige problemas ESLint
-npm run format           # Formata código com Prettier
+npm run lint             # Roda verificação TypeScript
 npm run type-check       # Verifica tipos TypeScript
 
-# Testes
-npm run test             # Roda testes
-npm run test:ui          # Interface UI para testes
-npm run test:coverage    # Gera relatório de cobertura
-npm run test:watch       # Modo watch para testes
+# Testes E2E
+npm run test:e2e         # Roda todos os testes E2E
+npm run test:e2e:ui      # Interface UI para testes Playwright
+npm run test:e2e:debug   # Debug de testes com DevTools
+npx playwright test e2e/auth.spec.ts  # Roda arquivo específico
 
 # Firebase
 firebase deploy          # Deploy completo
@@ -250,37 +295,65 @@ firebase deploy --only firestore:rules  # Deploy apenas rules
 
 ## 🗺️ Roadmap
 
-### ✅ Fase 1: MVP (Completo)
-- [x] Autenticação básica
-- [x] Dashboard principal
-- [x] CRUD de agendamentos
-- [x] Tela pública de agendamento
-- [x] Integração WhatsApp
-
-### 🚧 Fase 2: Segurança & Qualidade (Em Progresso)
-- [x] Variáveis de ambiente
+### ✅ Fase 1: Segurança (COMPLETA)
+- [x] Variáveis de ambiente (.env.local)
 - [x] Firestore Security Rules
-- [ ] Validação com Zod (50%)
-- [ ] Firebase App Check
-- [ ] Testes unitários (20%)
+- [x] Firebase App Check (reCAPTCHA v3)
+- [x] Validação com Zod
+- [x] Deploy de Rules
 
-### 📋 Fase 3: Arquitetura (Planejado)
-- [ ] Refatoração do monolito pages.tsx
-- [ ] Camada de serviços
-- [ ] Custom hooks principais
-- [ ] Gerenciamento de estado global
+### ✅ Fase 2: Arquitetura (COMPLETA)
+- [x] 8 Zustand Stores criadas
+- [x] 8 Custom Hooks implementados
+- [x] Service Layer (BaseService + especializados)
+- [x] Refatoração pages.tsx (4.100+ linhas extraídas)
+- [x] Feature-based structure
+- [x] Zero TypeScript errors
 
-### ⚡ Fase 4: Performance (Planejado)
+### 🚧 Fase 3: Testes E2E (EM PROGRESSO - 95%)
+- [x] Playwright instalado e configurado
+- [x] Feature 1: Autenticação (6/6 testes - 100%)
+- [x] Feature 2: Dashboard (4/4 testes - 100%)
+- [x] Feature 3: Clientes CRUD (5/5 testes - 100%)
+- [x] Feature 4: Appointments (5/6 testes - 83%)
+- [ ] Feature 5: Agenda (3 views)
+- [ ] Feature 6: Financial
+- [ ] Feature 7: Profile
+- [ ] Features 8-12: Settings, History, Booking
+
+📊 **[Ver Progresso Detalhado](./docs/TESTE_E2E_PROGRESSO.md)**
+
+### 📋 Fase 4: Features Avançadas (PLANEJADO)
+- [ ] Notificações real-time
+- [ ] Export de relatórios (PDF, Excel)
+- [ ] Filtros avançados
+- [ ] Dashboard com gráficos (Chart.js)
+- [ ] Sistema de avaliações
+- [ ] Chat interno
+
+### ⚡ Fase 5: Performance (PLANEJADO)
 - [ ] Code splitting
 - [ ] Lazy loading de rotas
-- [ ] Memoização de componentes
-- [ ] PWA
+- [ ] Image optimization
+- [ ] Bundle analysis
+- [ ] Lighthouse audit (90+ score)
+- [ ] PWA setup
 
-### 🎨 Fase 5: UX/A11Y (Planejado)
-- [ ] Melhorias de acessibilidade
-- [ ] Animações (Framer Motion)
-- [ ] Modo offline
-- [ ] Notificações push
+### 🧪 Fase 6: Qualidade (PLANEJADO)
+- [ ] Unit tests (stores)
+- [ ] Integration tests (hooks)
+- [ ] E2E tests completos (100%)
+- [ ] Error boundaries
+- [ ] Analytics integration
+- [ ] Sentry integration
+
+### 🚀 Fase 7: Deploy & Produção (PLANEJADO)
+- [ ] CI/CD pipeline (GitHub Actions)
+- [ ] Environment configs
+- [ ] Custom domain
+- [ ] SSL certificate
+- [ ] Monitoring e alertas
+- [ ] Backup automático
 
 ---
 

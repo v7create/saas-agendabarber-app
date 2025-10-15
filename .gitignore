@@ -40,6 +40,11 @@ ui-debug.log
 coverage
 .nyc_output
 
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
 # Build
 build
 .cache
