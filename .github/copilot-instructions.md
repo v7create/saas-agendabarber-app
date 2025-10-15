@@ -47,6 +47,15 @@ This is a mobile-first React SaaS application for barbershop management built wi
 
 **Firestore Structure**: Collection pattern `barbershops/{userId}/appointments` for data isolation.
 
+**Firestore Rules Critical Issue**: 
+- ⚠️ **NEVER use dot notation for fields named `service`** in `firestore.rules`
+- `service` is a RESERVED KEYWORD in Firestore Rules (like `match`, `allow`, `function`)
+- ❌ WRONG: `request.resource.data.service.size()`
+- ✅ CORRECT: `request.resource.data['service'].size()`
+- This applies to ANY reserved keywords used as field names
+- Failure to use bracket notation causes cryptic compilation errors: "Unexpected '.size'" and "mismatched input 'service'"
+- Deploy command: `firebase deploy --only firestore:rules` (modern syntax, NOT `--only rules`)
+
 ## Development Workflow
 
 **Build Commands**:

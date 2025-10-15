@@ -2,61 +2,115 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getAnalytics } from "firebase/analytics";
+import { getPerformance } from "firebase/performance";
 
-// --- HOW TO FIX: Firebase Error (auth/unauthorized-domain) ---
-// This error means your application's web address (domain) has not been
-// approved to use Firebase Authentication. For security, you must explicitly
-// add it to an allowlist in your Firebase project settings.
-//
-// Follow these steps to authorize your domain:
-//
-// 1. Go to the Firebase Console:
-//    https://console.firebase.google.com/
-//
-// 2. Select your project:
-//    "saas-barbearia-8d49a"
-//
-// 3. Navigate to the "Authentication" section and click the "Settings" tab.
-//
-// 4. Select the "Authorized domains" sub-tab.
-//
-// 5. Click "Add domain" and enter the domain from your browser's address bar.
-//    - For example: `your-id.aistudio.dev`
-//    - If you are running locally, you may need to add `localhost`.
-//
-// --- STILL NOT WORKING? CHECK API KEY RESTRICTIONS ---
-// If you have authorized the domain but it still fails, your API key might
-// be restricted.
-//
-// 1. Go to Google Cloud Console -> APIs & Services -> Credentials:
-//    https://console.cloud.google.com/apis/credentials
-//
-// 2. Select the correct project ("saas-barbearia-8d49a").
-//
-// 3. Find the API key named "Browser key (auto created by Firebase)" or similar.
-//
-// 4. Click on it. Under "Application restrictions", ensure that the "HTTP
-//    referrers (web sites)" option is either set to "None" or that it
-//    explicitly includes your AI Studio domain (`*.aistudio.dev/*`).
-//
-// Using `signInWithRedirect` instead of `signInWithPopup` is also recommended
-// for environments like this to avoid browser popup-blocking issues.
+// ============================================
+// VALIDAÇÃO DE VARIÁVEIS DE AMBIENTE
+// ============================================
 
-// Your web app's Firebase configuration.
+const requiredEnvVars = [
+  'VITE_FIREBASE_API_KEY',
+  'VITE_FIREBASE_AUTH_DOMAIN',
+  'VITE_FIREBASE_PROJECT_ID',
+  'VITE_FIREBASE_STORAGE_BUCKET',
+  'VITE_FIREBASE_MESSAGING_SENDER_ID',
+  'VITE_FIREBASE_APP_ID',
+] as const;
+
+// Valida que todas as variáveis obrigatórias estão presentes
+requiredEnvVars.forEach((varName) => {
+  if (!import.meta.env[varName]) {
+    throw new Error(
+      `❌ Variável de ambiente obrigatória ausente: ${varName}\n` +
+      `📝 Certifique-se de criar um arquivo .env.local com todas as credenciais do Firebase.\n` +
+      `📄 Use o .env.example como referência.`
+    );
+  }
+});
+
+// ============================================
+// CONFIGURAÇÃO DO FIREBASE
+// ============================================
+
 const firebaseConfig = {
-  apiKey: "AIzaSyDkKVoLLlKtzdScoc40AhOlAAHlY5VeWGU",
-  authDomain: "saas-barbearia-8d49a.firebaseapp.com",
-  projectId: "saas-barbearia-8d49a",
-  storageBucket: "saas-barbearia-8d49a.appspot.com",
-  messagingSenderId: "1047858874193",
-  appId: "1:1047858874193:web:16fa20bd6be382b3ee7570",
-  measurementId: "G-M5889WNWQ0"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
+// ============================================
+// INICIALIZAÇÃO DO FIREBASE
+// ============================================
+
+// Initialize Firebase App
 const app = initializeApp(firebaseConfig);
 
-// Export the services you will use
+// Initialize Auth
 export const auth = getAuth(app);
+
+// Initialize Firestore
 export const db = getFirestore(app);
+
+// Initialize Google Auth Provider
 export const googleProvider = new GoogleAuthProvider();
+
+// Configurar prompt do Google Provider para sempre mostrar seleção de conta
+googleProvider.setCustomParameters({
+  prompt: 'select_account',
+});
+
+// ============================================
+// SERVIÇOS OPCIONAIS (APENAS EM PRODUÇÃO)
+// ============================================
+
+// Analytics e Performance apenas em produção para evitar poluir métricas de desenvolvimento
+let analytics: ReturnType<typeof getAnalytics> | null = null;
+let performance: ReturnType<typeof getPerformance> | null = null;
+
+if (import.meta.env.PROD) {
+  try {
+    analytics = getAnalytics(app);
+    performance = getPerformance(app);
+    console.log('✅ Firebase Analytics e Performance inicializados');
+  } catch (error) {
+    console.warn('⚠️ Erro ao inicializar Analytics/Performance:', error);
+  }
+}
+
+export { analytics, performance };
+
+// ============================================
+// DEBUG INFO (APENAS EM DESENVOLVIMENTO)
+// ============================================
+
+if (import.meta.env.DEV) {
+  console.log('🔥 Firebase inicializado com sucesso!');
+  console.log('📦 Projeto:', firebaseConfig.projectId);
+  console.log('🌐 Auth Domain:', firebaseConfig.authDomain);
+  console.log('🔐 Modo:', import.meta.env.MODE);
+}
+
+// ============================================
+// TROUBLESHOOTING NOTES
+// ============================================
+// 
+// Se você encontrar o erro: auth/unauthorized-domain
+// 
+// 1. Acesse o Firebase Console: https://console.firebase.google.com/
+// 2. Selecione seu projeto
+// 3. Vá em Authentication > Settings > Authorized domains
+// 4. Adicione seu domínio (ex: localhost, seu-app.web.app, etc.)
+//
+// Se estiver usando signInWithRedirect:
+// - É recomendado usar redirect ao invés de popup para evitar bloqueio de popups
+// - Funciona melhor em ambientes de desenvolvimento
+//
+// Para mais informações sobre segurança:
+// - Consulte o arquivo firestore.rules para regras de segurança
+// - Revise as configurações de API Key no Google Cloud Console
+// ============================================
