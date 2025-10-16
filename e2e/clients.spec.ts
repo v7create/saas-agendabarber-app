@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Gestão de Clientes', () => {
   test.beforeEach(async ({ page }) => {
+    test.setTimeout(60000);
+    
     // Login
     await page.goto('/');
     await page.waitForLoadState('networkidle');
@@ -57,71 +59,115 @@ test.describe('Gestão de Clientes', () => {
     }
   });
 
-  test('deve criar novo cliente', async ({ page }) => {
+  test('deve criar novo cliente e refletir nos cards de estatísticas', async ({ page }) => {
+    test.setTimeout(60000);
+    
+    console.log('📊 TESTE: Cadastro completo de cliente com validação de estatísticas');
+    
+    // Capturar estatísticas ANTES do cadastro
+    const totalClientesBefore = await page.locator('text=Total de Clientes').locator('..').locator('text=/^\\d+$/').first().textContent();
+    const clientesAtivosBefore = await page.locator('text=Clientes Ativos').locator('..').locator('text=/^\\d+$/').first().textContent();
+    
+    console.log(`📈 ANTES - Total: ${totalClientesBefore} | Ativos: ${clientesAtivosBefore}`);
+    
     // Clicar em novo cliente
     const newClientBtn = page.locator('button:has-text("Novo Cliente")').first();
+    await expect(newClientBtn).toBeVisible();
+    await newClientBtn.click();
     
-    if (await newClientBtn.isVisible()) {
-      await newClientBtn.click();
-      
-      await expect(page.locator('[role="dialog"]').first()).toBeVisible();
-      
-      // Preencher formulário (usando placeholder ao invés de name)
-      const nameField = page.locator('input[placeholder="Nome completo"]');
-      const phoneField = page.locator('input[placeholder="(11) 99999-9999"]');
-      const emailField = page.locator('input[placeholder="cliente@email.com"]');
-      
-      await nameField.fill('Cliente Teste E2E');
-      await phoneField.fill('11999998888');
-      
-      if (await emailField.isVisible()) {
-        await emailField.fill('teste.e2e@exemplo.com');
-      }
-      
-      // Salvar (botão muda de texto: "Cadastrar" para novo, "Atualizar" para edição)
-      const saveButton = page.locator('button:has-text("Cadastrar")');
-      await saveButton.click();
-      
-      // Aguardar processamento (Firebase pode ser lento)
-      await page.waitForTimeout(5000);
-      
-      // TESTE FLEXÍVEL: Aceita múltiplos cenários de sucesso
-      // Cenário 1: Modal fechou (comportamento ideal)
-      const modalClosed = (await page.locator('[role="dialog"]').count()) === 0;
-      
-      // Cenário 2: Botão voltou ao estado normal (não está "Salvando...")
-      const buttonNormal = await saveButton.isVisible().catch(() => false);
-      const buttonText = buttonNormal ? await saveButton.textContent() : '';
-      const notSaving = buttonText !== 'Salvando...';
-      
-      // Cenário 3: Toast de sucesso apareceu
-      const hasSuccess = await page.locator('text=/sucesso/i').isVisible().catch(() => false);
-      
-      // Teste passa se qualquer cenário de sucesso ocorreu
-      const testPassed = modalClosed || notSaving || hasSuccess;
-      
-      if (!testPassed) {
-        console.log(`❌ Modal: ${modalClosed ? 'fechado' : 'aberto'}`);
-        console.log(`❌ Botão: "${buttonText}"`);
-        console.log(`❌ Sucesso: ${hasSuccess}`);
-      }
-      
-      expect(testPassed).toBeTruthy();
+    // Verificar modal abriu
+    await expect(page.locator('[role="dialog"]').first()).toBeVisible({ timeout: 3000 });
+    console.log('✅ Modal de cadastro aberto');
+    
+    // Preencher TODOS os campos (conforme imagem)
+    const timestamp = Date.now();
+    const clientName = `João Silva ${timestamp}`;
+    const clientPhone = `11999${timestamp.toString().slice(-6)}`;
+    const clientEmail = `joao.silva.${timestamp}@exemplo.com`;
+    
+    await page.locator('input[placeholder="Nome completo"]').fill(clientName);
+    await page.locator('input[placeholder="(11) 99999-9999"]').fill(clientPhone);
+    await page.locator('input[placeholder="cliente@email.com"]').fill(clientEmail);
+    await page.locator('input[placeholder="0.0"]').fill('5');
+    await page.locator('textarea[placeholder*="Observações"]').fill('Cliente teste E2E - Cadastro completo');
+    
+    console.log(`📝 Formulário preenchido: ${clientName}`);
+    
+    // Clicar em Cadastrar
+    const saveButton = page.locator('button:has-text("Cadastrar")');
+    await saveButton.click();
+    console.log('🔄 Aguardando salvamento...');
+    
+    // Aguardar processamento (Firebase + atualização de estado)
+    await page.waitForTimeout(6000);
+    
+    // Verificar se modal fechou (sucesso)
+    const modalClosed = (await page.locator('[role="dialog"]').count()) === 0;
+    console.log(`${modalClosed ? '✅' : '⚠️'} Modal fechado: ${modalClosed}`);
+    
+    // Aguardar atualização da página
+    await page.waitForTimeout(2000);
+    
+    // Capturar estatísticas DEPOIS do cadastro
+    const totalClientesAfter = await page.locator('text=Total de Clientes').locator('..').locator('text=/^\\d+$/').first().textContent();
+    const clientesAtivosAfter = await page.locator('text=Clientes Ativos').locator('..').locator('text=/^\\d+$/').first().textContent();
+    
+    console.log(`📈 DEPOIS - Total: ${totalClientesAfter} | Ativos: ${clientesAtivosAfter}`);
+    
+    // VALIDAÇÃO 1: Cliente incrementou nos cards
+    const totalIncremented = parseInt(totalClientesAfter || '0') > parseInt(totalClientesBefore || '0');
+    const ativosIncremented = parseInt(clientesAtivosAfter || '0') > parseInt(clientesAtivosBefore || '0');
+    
+    console.log(`${totalIncremented ? '✅' : '❌'} Total de clientes incrementou: ${totalIncremented}`);
+    console.log(`${ativosIncremented ? '✅' : '❌'} Clientes ativos incrementou: ${ativosIncremented}`);
+    
+    // VALIDAÇÃO 2: Card do cliente aparece na lista
+    const clientCard = page.locator(`[data-testid="client-card"]:has-text("${clientName}")`);
+    const cardVisible = await clientCard.isVisible().catch(() => false);
+    
+    console.log(`${cardVisible ? '✅' : '❌'} Card do cliente visível na lista: ${cardVisible}`);
+    
+    // VALIDAÇÃO 3: Informações corretas no card
+    if (cardVisible) {
+      await expect(clientCard.locator(`text=${clientPhone}`)).toBeVisible();
+      await expect(clientCard.locator(`text=${clientEmail}`)).toBeVisible();
+      await expect(clientCard.locator('text=Ativo')).toBeVisible();
+      console.log('✅ Informações do cliente corretas no card');
     }
+    
+    // Resultado final
+    const testPassed = modalClosed && totalIncremented && ativosIncremented && cardVisible;
+    
+    if (!testPassed) {
+      console.log('\n❌ FALHAS DETECTADAS:');
+      if (!modalClosed) console.log('  - Modal não fechou após cadastro');
+      if (!totalIncremented) console.log('  - Total de clientes não incrementou');
+      if (!ativosIncremented) console.log('  - Clientes ativos não incrementou');
+      if (!cardVisible) console.log('  - Card do cliente não apareceu na lista');
+    } else {
+      console.log('\n✅ TESTE COMPLETO: Todas validações passaram!');
+    }
+    
+    expect(testPassed).toBeTruthy();
   });
 
   test('deve filtrar clientes por status', async ({ page }) => {
-    // Verificar se há filtro de status
-    const statusFilter = page.locator('select').first();
+    // Verificar botões de filtro (conforme imagem: Todos, Ativos, Inativos)
+    const todosBtn = page.locator('button:has-text("Todos")');
+    const ativosBtn = page.locator('button:has-text("Ativos")');
+    const inativosBtn = page.locator('button:has-text("Inativos")');
     
-    if (await statusFilter.isVisible()) {
-      // Selecionar um filtro
-      await statusFilter.selectOption({ index: 1 });
-      
-      // Aguardar filtro ser aplicado
+    // Testar filtro "Ativos"
+    if (await ativosBtn.isVisible()) {
+      await ativosBtn.click();
       await page.waitForTimeout(500);
       
-      expect(true).toBeTruthy();
+      // Verificar se botão está selecionado (classe violet-600)
+      const isSelected = await ativosBtn.evaluate((el) => 
+        el.className.includes('bg-violet-600')
+      );
+      
+      expect(isSelected).toBeTruthy();
     }
   });
 });

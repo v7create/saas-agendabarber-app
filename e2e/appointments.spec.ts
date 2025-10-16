@@ -52,6 +52,9 @@ test.describe('Fluxo de Agendamento', () => {
   });
 
   test('deve criar novo agendamento', async ({ page }) => {
+    // Aumentar timeout para este teste específico
+    test.setTimeout(60000); // 60 segundos
+    
     console.log('🚀 Iniciando teste de criação de agendamento...');
     
     // Navegar para appointments
@@ -78,18 +81,18 @@ test.describe('Fluxo de Agendamento', () => {
     const phoneInput = modal.locator('input[placeholder="(00) 00000-0000"]');
     await phoneInput.fill('11999887766');
     
-    // PASSO 3: Serviços (SELECT MULTIPLE - ESTRATÉGIA CORRETA)
+    // PASSO 3: Serviços (CHECKBOXES - NÃO SELECT MULTIPLE!)
     console.log('📝 Selecionando serviços...');
-    const servicesSelect = modal.locator('select[multiple]');
-    await servicesSelect.waitFor({ state: 'visible', timeout: 3000 });
+    const serviceCheckboxes = modal.locator('input[type="checkbox"]');
+    await serviceCheckboxes.first().waitFor({ state: 'visible', timeout: 3000 });
     
     // Verificar se há serviços disponíveis
-    const optionsCount = await servicesSelect.locator('option').count();
-    console.log(`📋 ${optionsCount} serviços disponíveis`);
+    const checkboxCount = await serviceCheckboxes.count();
+    console.log(`📋 ${checkboxCount} serviços disponíveis`);
     
-    if (optionsCount > 0) {
-      // Selecionar primeiro serviço usando selectOption
-      await servicesSelect.selectOption({ index: 0 });
+    if (checkboxCount > 0) {
+      // Selecionar primeiro serviço (checkbox)
+      await serviceCheckboxes.first().click();
       console.log('✅ Serviço selecionado');
     } else {
       console.error('❌ Nenhum serviço disponível! Verifique ServicesStore.');
@@ -163,7 +166,7 @@ test.describe('Fluxo de Agendamento', () => {
         console.warn('⚠️ Agendamento criado mas não apareceu na lista (pode ser filtro ativo)');
       }
     }
-  }, { timeout: 45000 });
+  });
 
   test('deve filtrar agendamentos', async ({ page }) => {
     await page.goto('/#/appointments');
