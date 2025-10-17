@@ -219,7 +219,7 @@ const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({
     <div className="flex justify-between items-start">
       <div>
         <p className="text-2xl font-bold text-slate-100">{appointment.clientName}</p>
-        <p className="text-slate-400">{appointment.phone}</p>
+        <p className="text-slate-400">{appointment.clientPhone}</p>
       </div>
       <span
         className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
@@ -297,6 +297,7 @@ export const AgendaPage: React.FC = () => {
   });
   const [viewMode, setViewMode] = useState<ViewMode>('timeline');
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [prefilledTime, setPrefilledTime] = useState<string | undefined>(undefined);
 
   // Filtered appointments for selected date
   const dayAppointments = useMemo(() => {
@@ -353,8 +354,11 @@ export const AgendaPage: React.FC = () => {
   };
 
   const handleNewAppointment = (time?: string) => {
-    // TODO: Open new appointment modal with pre-filled time
-    console.log('New appointment at', time);
+    // Open new appointment modal with pre-filled time
+    if (time) {
+      setPrefilledTime(time);
+    }
+    openModal('newAppointmentAgenda');
   };
 
   // Kanban columns
@@ -536,6 +540,43 @@ export const AgendaPage: React.FC = () => {
       </div>
 
       {/* Modals */}
+      <Modal
+        isOpen={isModalOpen('newAppointmentAgenda')}
+        onClose={() => {
+          closeModal('newAppointmentAgenda');
+          setPrefilledTime(undefined);
+        }}
+        title="Novo Agendamento"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-400">
+            Horário pré-selecionado: <span className="text-slate-200 font-semibold">{prefilledTime || '--:--'}</span>
+          </p>
+          <p className="text-sm text-slate-300">
+            Utilize o formulário de agendamento no Dashboard para criar um novo agendamento com todos os detalhes.
+          </p>
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={() => {
+                closeModal('newAppointmentAgenda');
+                setPrefilledTime(undefined);
+              }}
+              className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-100 py-2 rounded-lg transition"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => {
+                closeModal('newAppointmentAgenda');
+                window.location.hash = '#/dashboard';
+              }}
+              className="flex-1 bg-violet-600 hover:bg-violet-500 text-white py-2 rounded-lg transition"
+            >
+              Ir ao Dashboard
+            </button>
+          </div>
+        </div>
+      </Modal>
       <Modal
         isOpen={isModalOpen('appointmentDetail')}
         onClose={() => {

@@ -1,7 +1,7 @@
 # 📋 TODO List - AgendaBarber
 
-**Última Atualização:** 15/10/2025 - 20:45  
-**Status Geral:** 🟢 Progredindo Conforme Planejado
+**Última Atualização:** 17/10/2025 - 00:00  
+**Status Geral:** 🟢 Fases 1-2 Concluídas - Pronto para Fase 3
 
 ---
 
@@ -9,6 +9,7 @@
 
 **Duração Real:** 2 horas  
 **Status:** 🟢 100% Concluído
+**Data de Conclusão:** 14/10/2025
 
 - [x] Variáveis de ambiente (.env.local + .env.example)
 - [x] Firestore Security Rules (protegendo collections)
@@ -25,8 +26,9 @@
 
 ## ✅ FASE 2: Arquitetura - COMPLETA ✅
 
-**Duração Real:** 2 dias  
+**Duração Real:** 3 dias  
 **Status:** 🟢 100% Concluído
+**Data de Conclusão:** 17/10/2025
 
 ### 2.1 State Management (Zustand Stores) ✅
 - [x] AuthStore - Autenticação global
@@ -65,6 +67,7 @@
 - [x] Extrair FinancialPage de pages.tsx (500 linhas)
 - [x] Extrair ProfilePage de pages.tsx (200 linhas)
 - [x] Extrair Settings pages de pages.tsx (1.100 linhas)
+- [x] Extrair HistoryPage de pages.tsx (193 linhas) ✅ CONCLUÍDA!
 - [x] **Total:** ~4.100 linhas extraídas ✅
 
 ### 2.5 Feature-Based Structure ✅
@@ -75,6 +78,7 @@
 - [x] src/features/agenda/
 - [x] src/features/clients/
 - [x] src/features/financial/
+- [x] src/features/history/ ✅ NOVA!
 - [x] src/features/profile/
 - [x] src/features/settings/
 
@@ -83,22 +87,108 @@
 - [x] Todas as importações funcionando
 - [x] Navegação testada manualmente
 - [x] Stores conectadas e funcionando
+- [x] Monólito completamente refatorado
 
 **Documentação:**
-- [docs/FASE_2_COMPLETO.md](./docs/FASE_2_COMPLETO.md)
-- [docs/REFACTORING_REPORT.md](./docs/REFACTORING_REPORT.md)
+- [docs/STATUS_PROJETO.md](./STATUS_PROJETO.md) ✅ Atualizado
+- [RESUMO_TECNICO_PROJETO.md](../RESUMO_TECNICO_PROJETO.md) ✅ Criado
 
-**Estatísticas:**
+**Estatísticas Finais:**
 - **8 Stores** criadas e funcionando
 - **8 Hooks** implementados
-- **10 Páginas** extraídas
+- **10 Páginas** extraídas (100% do monólito)
 - **~4.100 linhas** de código refatoradas
 - **0 erros** TypeScript
 - **100% funcional**
 
+**🎉 FASE 2 CONCLUÍDA COM SUCESSO! 🎉**
+
 ---
 
-## 🚧 FASE 3: Testes E2E - EM PROGRESSO (95%)
+## � FASE 3.5: Integração Completa de Dados - EM ANDAMENTO
+
+**Duração Estimada:** ~2h15min  
+**Status:** 🟡 0% Iniciado  
+**Início:** 17/10/2025  
+**Prioridade:** 🔴 CRÍTICA (bloqueia testes E2E assertivos)
+
+**Objetivo:** Garantir que TODOS os dados sejam reais e reativos antes de otimizações.
+
+**Documentação:** `docs/AUDITORIA_DADOS_FASE_3.5.md`
+
+### 3.5.1 Prioridade 1: Corrigir Bug Crítico ⏳
+**Tempo:** 15 min + 5 min teste
+
+- [ ] **Task 1.1:** Corrigir botão "Novo Agendamento" no Dashboard
+  - Arquivo: `DashboardPage.tsx` linha 554-562
+  - Problema: Navega para rota inexistente `/appointments/new`
+  - Solução: Trocar por `openModal('newAppointment')`
+  - Teste: Clicar no botão → Modal deve abrir
+
+- [ ] **Task 1.2:** Verificar modal de novo agendamento
+  - Arquivo: `DashboardPage.tsx`
+  - Ação: Garantir que modal chama `createAppointment()`
+  - Teste: Preencher form → Salvar → Verificar Firestore
+
+### 3.5.2 Prioridade 2: Integrar Appointments ↔ Financial ⏳
+**Tempo:** 30 min + 10 min teste
+
+- [ ] **Task 2.1:** Auto-criar transação quando agendamento concluído
+  - Arquivo: `appointments.store.ts`
+  - Lógica: Listener que dispara `financial.store.ts`
+  - Quando: Status muda para "Concluído"
+  - Ação: Criar transação de receita automaticamente
+  - Teste: Criar agendamento → Concluir → Verificar transação em FinancialPage
+
+### 3.5.3 Prioridade 3: Dashboard 100% Reativo ⏳
+**Tempo:** 20 min + 5 min teste
+
+- [ ] **Task 3.1:** Recalcular KPIs com useMemo
+  - Arquivo: `DashboardPage.tsx`
+  - Ação: Mover cálculos para `useMemo` com dependências corretas
+  - KPIs: todayRevenue, appointmentStats, clientStats
+  - Teste: Criar transação → "Receita Hoje" atualiza automaticamente
+
+### 3.5.4 Prioridade 4: HistoryPage com Dados Reais ⏳
+**Tempo:** 25 min + 10 min teste
+
+- [ ] **Task 4.1:** Substituir MOCK_HISTORY
+  - Arquivo: `HistoryPage.tsx`
+  - Ação: Usar `useAppointments()` filtrado por "Concluído"
+  - Teste: Concluir agendamento → Aparece no histórico
+
+- [ ] **Task 4.2:** Calcular stats dinamicamente
+  - Arquivo: `HistoryPage.tsx`
+  - Remover: Valores hardcoded ("4", "R$ 215")
+  - Calcular: totalServices, totalRevenue, avgRating, avgTicket
+  - Teste: Stats refletem dados reais
+
+### 3.5.5 Prioridade 5: BookingPage Validação ⏳
+**Tempo:** 10 min + 5 min teste
+
+- [ ] **Task 5.1:** Verificar se BookingPage usa dados reais
+  - Arquivo: `BookingPage.tsx`
+  - Ação: Confirmar uso de `useServices()` (não mock)
+  - Teste: Criar serviço → Deve aparecer em Booking
+
+### 3.5.6 Validação Final (Fluxo Completo) ⏳
+**Tempo:** 35 min
+
+- [ ] **Teste 1:** Criar Serviço → Aparece em Appointments select
+- [ ] **Teste 2:** Criar Cliente → "Total Clientes" aumenta (Dashboard)
+- [ ] **Teste 3:** Criar Agendamento → Aparece em Dashboard/Appointments/Agenda
+- [ ] **Teste 4:** Concluir Agendamento → Cria transação + Aparece em History
+- [ ] **Teste 5:** Criar Transação → Atualiza "Receita Hoje"
+
+**Resultado Esperado:**
+- ✅ 100% dados reais (6/6 features)
+- ✅ Dashboard totalmente reativo
+- ✅ Fluxo completo funcional
+- ✅ Pronto para testes E2E assertivos
+
+---
+
+## 🚧 FASE 3: Testes E2E - PAUSADO (95%)
 
 **Duração Estimada:** 3-5 dias  
 **Status:** 🟡 95% Concluído (20/21 testes passando)  

@@ -33,7 +33,7 @@
  */
 
 import { create } from 'zustand';
-import { Appointment, AppointmentStatus } from '@/types';
+import { Appointment, AppointmentStatus, TransactionType } from '@/types';
 import { BaseService } from '@/services/base.service';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
 
@@ -306,7 +306,43 @@ export const useAppointmentsStore = create<AppointmentsState>((set, get) => ({
   // Atualiza apenas o status de um agendamento (helper convenience)
   updateStatus: async (id: string, status: AppointmentStatus) => {
     try {
+      const appointment = get().appointments.find(a => a.id === id);
+      if (!appointment) {
+        throw new Error('Agendamento não encontrado');
+      }
+
+      // Atualiza o status
       await get().updateAppointment(id, { status });
+
+      // Se status muda para COMPLETED e há preço, cria auto-transação
+      if (status === AppointmentStatus.Completed && appointment.price && appointment.price > 0) {
+        try {
+          // Import dinâmico do financial store para evitar circular dependency
+          const { useFinancialStore } = await import('./financial.store');
+          const financialStore = useFinancialStore.getState();
+          
+          // Formatar data e hora para transação
+          const today = new Date();
+          const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+          const timeStr = today.toTimeString().substring(0, 5); // HH:MM
+          
+          // Criar transação de receita
+          await financialStore.createTransaction({
+            type: TransactionType.Income,
+            description: `${appointment.clientName} - Agendamento Concluído`,
+            category: appointment.services.join(' + '),
+            amount: appointment.price,
+            date: dateStr,
+            time: timeStr,
+            paymentMethod: 'Não especificado' // Será informado manualmente se necessário
+          });
+          
+          console.log(`✅ Auto-transação criada: R$ ${appointment.price} para ${appointment.clientName}`);
+        } catch (err) {
+          // Log do erro mas não falha a operação principal
+          console.warn('Aviso: Erro ao criar auto-transação:', err);
+        }
+      }
     } catch (error) {
       // Erro já tratado no updateAppointment
       throw error;

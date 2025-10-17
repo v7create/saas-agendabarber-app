@@ -27,7 +27,7 @@
  * - Auto-fetch de dados ao montar
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
@@ -230,6 +230,178 @@ const ConfirmationModalContent: React.FC<ConfirmationModalContentProps> = ({
     </div>
   </div>
 );
+
+/**
+ * NewAppointmentForm - Formulário inline para criar agendamento
+ */
+interface NewAppointmentFormProps {
+  onClose: () => void;
+}
+
+const NewAppointmentForm: React.FC<NewAppointmentFormProps> = ({ onClose }) => {
+  const { createAppointment } = useAppointments();
+  const { clients } = useClients({ autoFetch: true });
+  const { services } = useServices({ autoFetch: true });
+  const { success, error: showError } = useUI();
+
+  const [clientName, setClientName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [date, setDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [duration, setDuration] = useState(60);
+  const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const totalPrice = selectedServices.reduce((sum, serviceName) => {
+    const service = services.find(s => s.name === serviceName);
+    return sum + (service?.price || 0);
+  }, 0);
+
+  const handleSubmit = async () => {
+    if (!clientName.trim() || !phone.trim() || selectedServices.length === 0 || !date || !startTime) {
+      showError('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await createAppointment({
+        clientName: clientName.trim(),
+        clientPhone: phone.trim(),
+        date,
+        startTime,
+        status: AppointmentStatus.Pending,
+        // Campos opcionais (não validados pelas regras, mas salvos)
+        duration,
+        price: totalPrice,
+        services: selectedServices,
+        notes: notes.trim()
+      });
+      success('Agendamento criado com sucesso!');
+      onClose();
+    } catch (err) {
+      showError('Erro ao criar agendamento');
+      console.error('Erro detalhado:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleService = (serviceName: string) => {
+    setSelectedServices(prev =>
+      prev.includes(serviceName)
+        ? prev.filter(s => s !== serviceName)
+        : [...prev, serviceName]
+    );
+  };
+
+  return (
+    <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+      <div>
+        <label className="text-sm font-medium text-slate-400">Cliente *</label>
+        <input
+          type="text"
+          value={clientName}
+          onChange={(e) => setClientName(e.target.value)}
+          placeholder="Nome do cliente"
+          className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+        />
+      </div>
+      <div>
+        <label className="text-sm font-medium text-slate-400">Telefone *</label>
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="(00) 00000-0000"
+          className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+        />
+      </div>
+      <div>
+        <label className="text-sm font-medium text-slate-400 mb-2 block">
+          Serviços * (R$ {totalPrice.toFixed(2)})
+        </label>
+        <div className="space-y-2 max-h-32 overflow-y-auto border border-slate-600 rounded-lg p-3 bg-slate-700/30">
+          {services.length === 0 ? (
+            <p className="text-slate-400 text-sm">Nenhum serviço disponível</p>
+          ) : (
+            services.map(service => (
+              <label key={service.id} className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedServices.includes(service.name)}
+                  onChange={() => toggleService(service.name)}
+                  className="w-4 h-4 text-violet-600 bg-slate-700 border-slate-600 rounded focus:ring-2 focus:ring-violet-500"
+                />
+                <span className="text-slate-200 text-sm">
+                  {service.name} - R$ {service.price.toFixed(2)}
+                </span>
+              </label>
+            ))
+          )}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-sm font-medium text-slate-400">Data *</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-slate-400">Horário *</label>
+          <input
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+          />
+        </div>
+      </div>
+      <div>
+        <label className="text-sm font-medium text-slate-400">Duração (minutos)</label>
+        <input
+          type="number"
+          value={duration}
+          onChange={(e) => setDuration(parseInt(e.target.value))}
+          min="15"
+          step="15"
+          className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+        />
+      </div>
+      <div>
+        <label className="text-sm font-medium text-slate-400">Notas</label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Observações sobre o agendamento..."
+          className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+          rows={2}
+        />
+      </div>
+      <div className="flex space-x-3 pt-4">
+        <button
+          onClick={onClose}
+          disabled={loading}
+          className="flex-1 bg-slate-700 text-slate-200 font-bold py-2 rounded-lg hover:bg-slate-600 disabled:bg-slate-800"
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="flex-1 bg-violet-600 text-white font-bold py-2 rounded-lg hover:bg-violet-700 disabled:bg-slate-500"
+        >
+          {loading ? 'Salvando...' : 'Agendar'}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 /**
  * NewClientForm - Formulário inline para criar cliente
@@ -485,18 +657,27 @@ export const DashboardPage: React.FC = () => {
     day: 'numeric'
   }).format(today);
 
-  // Estatísticas
-  const todayAppointments = getTodayAppointments();
-  const futureAppointments = getFutureAppointments().slice(0, 5); // Mostrar apenas 5
-  const appointmentStats = getAppointmentStats();
-  const clientStats = getClientStats();
-  const todayTransactions = getTodayTransactions();
-  const todayRevenue = todayTransactions
-    .filter(t => t.type === TransactionType.Income)
-    .reduce((sum, t) => sum + t.amount, 0);
+  // Estatísticas - Otimizado com useMemo
+  const { todayAppointments, futureAppointments, appointmentStats, nextAppointment, todayRevenue, todayTransactionsCount } = useMemo(() => {
+    const today = getTodayAppointments();
+    const future = getFutureAppointments().slice(0, 5);
+    const stats = getAppointmentStats();
+    const transactions = getTodayTransactions()
+      .filter(t => t.type === TransactionType.Income);
+    const revenue = transactions.reduce((sum, t) => sum + t.amount, 0);
+    const next = future[0] || null;
 
-  // Próximo agendamento
-  const nextAppointment = futureAppointments[0];
+    return {
+      todayAppointments: today,
+      futureAppointments: future,
+      appointmentStats: stats,
+      nextAppointment: next,
+      todayRevenue: revenue,
+      todayTransactionsCount: transactions.length
+    };
+  }, [getTodayAppointments, getFutureAppointments, getAppointmentStats, getTodayTransactions]);
+
+  const clientStats = useMemo(() => getClientStats(), [getClientStats]);
 
   // Handlers
   const handleEditClick = (appointment: Appointment) => {
@@ -553,7 +734,7 @@ export const DashboardPage: React.FC = () => {
         <button
           onClick={() => {
             setSelectedAppointment(null);
-            navigate('/appointments/new');
+            openModal('newAppointment');
           }}
           className="w-full bg-violet-600 text-white font-bold py-3 rounded-lg flex items-center justify-center space-x-2 shadow-lg shadow-violet-600/20 hover:bg-violet-700 transition-colors"
         >
@@ -573,7 +754,7 @@ export const DashboardPage: React.FC = () => {
             icon="dollar"
             title="Receita Hoje"
             value={`R$ ${todayRevenue.toFixed(0)}`}
-            trend={`${todayTransactions.length} transações`}
+            trend={`${todayTransactionsCount} transações`}
           />
           <StatCard
             icon="users"
@@ -602,7 +783,7 @@ export const DashboardPage: React.FC = () => {
             <QuickActionButton
               icon="calendar"
               label="Novo Agendamento"
-              onClick={() => navigate('/appointments/new')}
+              onClick={() => openModal('newAppointment')}
             />
             <QuickActionButton
               icon="users"
@@ -692,6 +873,14 @@ export const DashboardPage: React.FC = () => {
           onConfirm={handleConfirmComplete}
           onCancel={() => closeModal('confirmComplete')}
         />
+      </Modal>
+
+      <Modal
+        isOpen={isModalOpen('newAppointment')}
+        onClose={() => closeModal('newAppointment')}
+        title="Novo Agendamento"
+      >
+        <NewAppointmentForm onClose={() => closeModal('newAppointment')} />
       </Modal>
 
       <Modal

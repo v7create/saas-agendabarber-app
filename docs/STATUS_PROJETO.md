@@ -1,8 +1,8 @@
 # 📊 Status do Projeto AgendaBarber
 
-**Última atualização:** 15/10/2025  
-**Versão:** 2.0  
-**Fase atual:** Fase 2 - 90% Concluída
+**Última atualização:** 17/01/2025  
+**Versão:** 2.1  
+**Fase atual:** Fase 3.5 - Correção UI (0%)
 
 ---
 
@@ -10,13 +10,19 @@
 
 ```
 Fase 1: Segurança       ████████████████████ 100% ✅ CONCLUÍDA
-Fase 2: Arquitetura     ██████████████████░░  90% 🔄 EM ANDAMENTO
-Fase 3: Performance     ░░░░░░░░░░░░░░░░░░░░   0% ⏳ PENDENTE
+Fase 2: Arquitetura     ████████████████████ 100% ✅ CONCLUÍDA
+Fase 3.5: Correção UI   ░░░░░░░░░░░░░░░░░░░░   0% � BLOQUEADORA
+Fase 3: Performance     ░░░░░░░░░░░░░░░░░░░░   0% ⏸️ PAUSADA
 Fase 4: Qualidade       ░░░░░░░░░░░░░░░░░░░░   0% ⏳ PENDENTE
 Fase 5: UX/A11Y         ░░░░░░░░░░░░░░░░░░░░   0% ⏳ PENDENTE
 
-PROGRESSO TOTAL         ██████████████████░░  90%
+PROGRESSO TOTAL         ████████░░░░░░░░░░░░  40% (Fases 1-2, mas UI 26%)
 ```
+
+**⚠️ REVISÃO CRÍTICA REALIZADA:**
+- Arquitetura: 100% (Stores + Hooks)
+- UI Funcional: 26% (apenas Financial + Services)
+- **Problema:** 75% dos botões não conectados aos stores
 
 ---
 
@@ -45,11 +51,12 @@ PROGRESSO TOTAL         ██████████████████�
 
 ---
 
-## 🔄 Fase 2: Arquitetura - 90% CONCLUÍDA
+## ✅ Fase 2: Arquitetura - 100% CONCLUÍDA
 
-**Duração:** 2 dias  
-**Status:** 🔄 90% completa  
+**Duração:** 3 dias  
+**Status:** ✅ 100% completa  
 **Prioridade:** Alta
+**Data de Conclusão:** 17/10/2025
 
 ### ✅ Objetivos Completados
 1. ✅ **8 Zustand Stores criados** (100%)
@@ -77,7 +84,7 @@ PROGRESSO TOTAL         ██████████████████�
    - useNotifications - Notificações real-time
    - useUI - Controle de modais/toasts
 
-4. ✅ **9 Páginas Extraídas** (~3,900 linhas)
+4. ✅ **10 Páginas Extraídas** (~4,100 linhas)
    - DashboardPage (587 linhas) - 4 stores, 5 modais
    - ClientsPage (520+ linhas) - Search, filtros, CRUD
    - FinancialPage (500+ linhas) - Stats, gráficos
@@ -87,17 +94,137 @@ PROGRESSO TOTAL         ██████████████████�
    - ShopSettingsPage (400+ linhas) - Profissionais, horários, pagamentos
    - ServicesSettingsPage (350+ linhas) - CRUD de serviços
    - AppSettingsPage (350+ linhas) - Tema, conta, notificações
+   - HistoryPage (193 linhas) - Histórico de atendimentos ✅ NOVA!
 
-### 🔄 Objetivos em Andamento
-5. 🔄 **Refatoração do Monólito** (90%)
-   - ✅ 9 de 10 páginas extraídas
-   - ⏳ HistoryPage - Restante no monólito
+5. ✅ **Refatoração do Monólito** (100%)
+   - ✅ 10 de 10 páginas extraídas
+   - ✅ HistoryPage removida do monólito
+   - ✅ Zero erros TypeScript
+   - ✅ Todas as importações funcionando
+
+---
+
+## � Fase 3.5: Correção UI - BLOQUEADORA
+
+**Duração Estimada:** 6-8 horas  
+**Status:** � 0% completa  
+**Prioridade:** 🔴 BLOQUEADORA (descoberto após auditoria crítica)
+**Data de Início:** 17/01/2025
+
+### 🚨 REVISÃO CRÍTICA REALIZADA
+
+**Documentação:**
+- `docs/AUDITORIA_DADOS_FASE_3.5.md` (auditoria completa)
+- `docs/PLANO_CORRECAO_UI.md` (plano de ação detalhado)
+
+**Problema Identificado:**
+Auditoria com screenshots revelou que **apenas 26% do sistema funciona** (2 de 8 features).
+
+**Root Cause:**
+```
+✅ Stores (Zustand): 100% implementados e funcionais
+✅ Hooks: 100% implementados e funcionais
+✅ Firebase: 100% configurado e testado
+❌ UI Components: 75% desconectados dos stores
+```
+
+### 📊 Status Real por Feature
+
+| Feature | Arquitetura | UI | Status Real |
+|---------|-------------|----|----|
+| **Financial** | ✅ 100% | ✅ 100% | 🟢 FUNCIONA |
+| **Services** | ✅ 100% | ✅ 100% | 🟢 FUNCIONA |
+| **Clients** | ✅ 100% | ❌ 0% | 🔴 QUEBRADO |
+| **Dashboard** | ✅ 100% | ❌ 10% | 🔴 QUEBRADO |
+| **Agenda** | ✅ 100% | ❌ 0% | � QUEBRADO |
+| **Appointments** | ✅ 100% | ❌ 0% | 🔴 QUEBRADO |
+| **History** | ✅ 100% | ❌ 0% | 🔴 MOCK DATA |
+| **Barbershop** | ✅ 100% | ⚠️ ? | 🟡 NÃO TESTADO |
+
+**Score Geral REAL:** 🔴 **26%** (apenas 2/8 features funcionam)
+
+### 🐛 Problemas Específicos (com Evidências)
+
+#### 1. ClientsPage - Completamente Quebrada 🔴
+- **Evidência:** Screenshot do usuário
+- **Problema:** Botão "+ Novo Cliente" não abre modal
+- **Stats:** Mostram "0" sempre
+- **Lista:** Vazia mesmo tentando criar
+- **Tempo de Correção:** 1-1.5h
+
+#### 2. DashboardPage - 4 Botões Não Funcionam 🔴
+- **Evidência:** Screenshot do usuário
+- **Problemas:**
+  1. Botão "+ Novo Agendamento" (3 locais) → Não abre modal
+  2. Botão "Cadastrar Cliente" → Não funciona
+  3. KPIs estáticos (não reagem a mudanças)
+- **Root:** Tentam `navigate('/appointments/new')` (rota inexistente)
+- **Tempo de Correção:** 2-2.5h
+
+#### 3. AgendaPage - Botões Sem Resposta 🔴
+- **Evidência:** Screenshot do usuário
+- **Problemas:**
+  1. Botão "+" (top right) → Não abre modal
+  2. Botões "+ Agendar" (timeline) → Sem resposta
+- **Tempo de Correção:** 1-1.5h
+
+#### 4. AppointmentsPage - Não Testável 🔴
+- **Problema:** Impossível testar (não consegue criar agendamentos)
+- **Dependência:** Corrigir Dashboard/Agenda primeiro
+- **Tempo de Correção:** 1h (após dependências)
+
+#### 5. HistoryPage - 100% Fake 🔴
+- **Problema:** Usa constante `MOCK_HISTORY` hardcoded
+- **Impacto:** Página completamente falsa
+- **Tempo de Correção:** 30min
+- **Solução:** Listener em appointments.store.ts
+
+#### 3. Dashboard Não Reativo ⚠️
+- **Problema:** KPIs não recalculam automaticamente
+- **Impacto:** Dados desatualizados até refresh
+- **Solução:** Usar useMemo com dependências corretas
+
+#### 4. HistoryPage com Dados Mockados ❌
+- **Problema:** Usa MOCK_HISTORY de constants.ts
+- **Impacto:** Página completamente fake
+- **Solução:** Filtrar appointments por status "Concluído"
+
+### ⏳ Tasks em Andamento
+
+**Prioridade 1: Corrigir Bug Crítico** (15 min)
+- [ ] Corrigir botão "Novo Agendamento"
+- [ ] Verificar modal de criação
+
+**Prioridade 2: Appointments ↔ Financial** (30 min)
+- [ ] Auto-criar transação ao concluir agendamento
+
+**Prioridade 3: Dashboard Reativo** (20 min)
+- [ ] Recalcular KPIs com useMemo
+
+**Prioridade 4: HistoryPage Real** (25 min)
+- [ ] Substituir MOCK_HISTORY
+- [ ] Calcular stats dinamicamente
+
+**Prioridade 5: Validação BookingPage** (10 min)
+- [ ] Verificar uso de dados reais
+
+**Validação Final** (35 min)
+- [ ] Teste fluxo completo: Serviço → Cliente → Agendamento → Concluir → Histórico
 
 ### Estrutura de Pastas Implementada
 ```
 src/
-├── features/           # ✅ Features por domínio
+├── features/           # ✅ Features por domínio (10 features completas)
 │   ├── auth/          # ✅ Login/Register
+│   ├── booking/       # ✅ Página pública de agendamento
+│   ├── dashboard/     # ✅ Dashboard principal
+│   ├── appointments/  # ✅ Gestão de agendamentos
+│   ├── agenda/        # ✅ Visualização de agenda
+│   ├── clients/       # ✅ Gestão de clientes
+│   ├── financial/     # ✅ Controle financeiro
+│   ├── history/       # ✅ Histórico de atendimentos
+│   ├── profile/       # ✅ Perfil da barbearia
+│   └── settings/      # ✅ Configurações (Shop, Services, App)
 │   ├── booking/       # ✅ Página pública de agendamento
 │   ├── dashboard/     # ✅ Dashboard principal
 │   ├── appointments/  # ✅ Gestão de agendamentos

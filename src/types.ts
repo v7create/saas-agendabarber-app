@@ -8,15 +8,16 @@ export enum AppointmentStatus {
 export interface Appointment {
   id: string;
   clientName: string;
+  clientPhone: string;
   services: string[];
   startTime: string;
   duration: number; // in minutes
   status: AppointmentStatus;
-  phone?: string;
   price?: number;
   notes?: string;
   date: string;
   barberName?: string;
+  createdAt?: number; // Firebase timestamp
 }
 
 export enum ClientStatus {

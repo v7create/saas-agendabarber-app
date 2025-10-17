@@ -567,7 +567,7 @@ const UpcomingAppointmentItem: React.FC<{ appointment: Appointment; onEdit: (app
     };
 
     const formattedDate = formatUpcomingDate(appointment.date, appointment.startTime);
-    const whatsappLink = `https://wa.me/${appointment.phone?.replace(/\D/g, '')}?text=Olá!%20Lembrete%20do%20seu%20agendamento%20na%20barbearia.`;
+    const whatsappLink = `https://wa.me/${appointment.clientPhone?.replace(/\D/g, '')}?text=Olá!%20Lembrete%20do%20seu%20agendamento%20na%20barbearia.`;
     
     return (
         <div className="bg-slate-700/40 rounded-xl p-3 space-y-3">
@@ -755,7 +755,7 @@ const AppointmentCard: React.FC<{ appointment: Appointment }> = ({ appointment }
                         <p className="font-bold text-slate-100">{appointment.clientName}</p>
                         <p className="text-sm text-slate-300">{appointment.services.join(' + ')}</p>
                         <p className="text-sm text-slate-400 flex items-center mt-2">
-                           <Icon name="user" className="w-4 h-4 mr-2" />{appointment.phone}
+                           <Icon name="user" className="w-4 h-4 mr-2" />{appointment.clientPhone}
                         </p>
                         {appointment.notes && <p className="text-xs text-slate-500 italic mt-2">"{appointment.notes}"</p>}
                     </div>
@@ -1117,80 +1117,6 @@ export const FinancialPage: React.FC = () => {
                     {MOCK_TRANSACTIONS.map(tx => <TransactionItem key={tx.id} transaction={tx}/>)}
                  </div>
                  <button className="w-full mt-4 text-center text-violet-400 font-semibold text-sm">Ver Todas as Transações</button>
-            </Card>
-        </div>
-    );
-};
-
-// HistoryPage Component
-// This page still uses MOCK_HISTORY.
-const HistoryDetailCard: React.FC<{item: (typeof MOCK_HISTORY)[0]}> = ({ item }) => {
-    return (
-        <div className="flex space-x-4">
-            <div className="text-center">
-                <p className="font-bold text-slate-100">{item.date}</p>
-                <p className="text-sm text-slate-400">{item.time}</p>
-            </div>
-            <div className="w-px bg-slate-700 h-auto"></div>
-            <Card className="flex-grow">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <p className="font-semibold text-slate-300 flex items-center"><Icon name="user" className="w-4 h-4 mr-2" />{item.clientName}</p>
-                        <p className="font-bold text-slate-100 text-lg">{item.services}</p>
-                    </div>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-400">Concluído</span>
-                </div>
-                <div className="flex items-center justify-between text-sm text-slate-400 mt-3">
-                    <span>{item.duration}min</span>
-                    <span className="font-bold text-slate-100 text-base">R$ {item.price}</span>
-                </div>
-                <div className="flex items-center space-x-1 text-yellow-400 mt-3">
-                    {[...Array(5)].map((_, i) => <Icon key={i} name="star" className={`w-5 h-5 ${i < item.rating ? 'fill-current' : ''}`} />)}
-                </div>
-                {item.notes && <p className="text-xs text-slate-500 italic mt-3 pt-3 border-t border-slate-700">"{item.notes}"</p>}
-            </Card>
-        </div>
-    );
-};
-export const HistoryPage: React.FC = () => {
-    return (
-        <div className="space-y-6 pb-6">
-            <div>
-                <p className="text-2xl font-bold">Histórico de Atendimentos</p>
-                <p className="text-slate-400">Acompanhe todos os serviços realizados</p>
-            </div>
-            <button className="w-full bg-slate-800/50 border border-slate-700 text-white font-bold py-3 rounded-lg flex items-center justify-center space-x-2">
-                <Icon name="download" className="w-5 h-5"/>
-                <span>Exportar Relatório</span>
-            </button>
-             <div className="relative">
-                <Icon name="search" className="w-5 h-5 text-slate-400 absolute top-1/2 left-3 -translate-y-1/2"/>
-                <input type="text" placeholder="Buscar por cliente ou serviço..." className="w-full bg-slate-800/50 border border-slate-700 rounded-lg pl-10 pr-3 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500" />
-            </div>
-            <div className="flex space-x-3">
-                 <select className="flex-grow bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2.5 text-slate-100 appearance-none">
-                     <option>Últimos 30 dias</option>
-                     <option>Últimos 7 dias</option>
-                     <option>Este mês</option>
-                 </select>
-                 <button className="bg-slate-800/50 border border-slate-700 rounded-lg px-4 flex items-center justify-center space-x-2">
-                    <Icon name="filter" className="w-5 h-5 text-slate-400"/>
-                    <span className="font-semibold">Filtros</span>
-                 </button>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <StatCard icon="scissors" title="Serviços Realizados" value="4"/>
-                <StatCard icon="dollar" title="Receita Total" value="R$ 215"/>
-                <StatCard icon="star" title="Avaliação Média" value="4.8"/>
-                <StatCard icon="clock" title="Ticket Médio" value="R$ 54"/>
-            </div>
-
-            <Card>
-                 <h3 className="font-bold text-slate-100 mb-2 flex items-center"><Icon name="history" className="w-5 h-5 mr-2 text-violet-400"/> Histórico Detalhado</h3>
-                 <p className="text-sm text-slate-400 mb-6">Registro completo de todos os atendimentos</p>
-                 <div className="space-y-5">
-                    {MOCK_HISTORY.map(item => <HistoryDetailCard key={item.id} item={item}/>)}
-                 </div>
             </Card>
         </div>
     );

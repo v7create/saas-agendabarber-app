@@ -103,7 +103,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
             <p className="text-sm text-slate-300">{appointment.services.join(' + ')}</p>
             <p className="text-sm text-slate-400 flex items-center mt-2">
               <Icon name="user" className="w-4 h-4 mr-2" />
-              {appointment.phone}
+              {appointment.clientPhone}
             </p>
             {appointment.notes && (
               <p className="text-xs text-slate-500 italic mt-2">"{appointment.notes}"</p>
@@ -181,7 +181,7 @@ const NewAppointmentForm: React.FC<NewAppointmentFormProps> = ({ onClose, editin
   const { success, error: showError } = useUI();
 
   const [clientName, setClientName] = useState(editingAppointment?.clientName || '');
-  const [phone, setPhone] = useState(editingAppointment?.phone || '');
+  const [clientPhone, setClientPhone] = useState(editingAppointment?.clientPhone || '');
   const [selectedServices, setSelectedServices] = useState<string[]>(editingAppointment?.services || []);
   const [date, setDate] = useState(editingAppointment?.date || '');
   const [startTime, setStartTime] = useState(editingAppointment?.startTime || '');
@@ -198,7 +198,7 @@ const NewAppointmentForm: React.FC<NewAppointmentFormProps> = ({ onClose, editin
   }, [selectedServices, services]);
 
   const handleSubmit = async () => {
-    if (!clientName.trim() || !phone.trim() || selectedServices.length === 0 || !date || !startTime) {
+    if (!clientName.trim() || !clientPhone.trim() || selectedServices.length === 0 || !date || !startTime) {
       showError('Preencha todos os campos obrigatórios');
       return;
     }
@@ -209,7 +209,7 @@ const NewAppointmentForm: React.FC<NewAppointmentFormProps> = ({ onClose, editin
         // Update existing appointment
         await updateAppointment(editingAppointment.id, {
           clientName: clientName.trim(),
-          phone: phone.trim(),
+          clientPhone: clientPhone.trim(),
           services: selectedServices,
           date,
           startTime,
@@ -222,7 +222,7 @@ const NewAppointmentForm: React.FC<NewAppointmentFormProps> = ({ onClose, editin
         // Create new appointment
         const createData: CreateAppointmentData = {
           clientName: clientName.trim(),
-          phone: phone.trim(),
+          clientPhone: clientPhone.trim(),
           services: selectedServices,
           date,
           startTime,
@@ -266,8 +266,8 @@ const NewAppointmentForm: React.FC<NewAppointmentFormProps> = ({ onClose, editin
         <label className="text-sm font-medium text-slate-400">Telefone *</label>
         <input
           type="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          value={clientPhone}
+          onChange={(e) => setClientPhone(e.target.value)}
           placeholder="(00) 00000-0000"
           className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
         />

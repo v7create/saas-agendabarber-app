@@ -63,26 +63,22 @@ service cloud.firestore {
       match /appointments/{appointmentId} {
         allow read: if isOwner(userId);
         
-        allow create: if isAuthenticated() &&
-          request.resource.data.keys().hasAll(['clientName', 'clientPhone', 'service', 'date', 'time', 'status', 'createdAt']) &&
+        allow create: if isOwner(userId) &&
+          request.resource.data.keys().hasAll(['clientName', 'clientPhone', 'date', 'startTime', 'status', 'createdAt']) &&
           request.resource.data.clientName.size() >= 3 &&
           request.resource.data.clientName.size() <= 100 &&
           isValidPhone(request.resource.data.clientPhone) &&
-          request.resource.data['service'].size() >= 3 &&
-          request.resource.data['service'].size() <= 100 &&
           isValidDate(request.resource.data.date) &&
-          isValidTime(request.resource.data.time) &&
+          isValidTime(request.resource.data.startTime) &&
           isValidAppointmentStatus(request.resource.data.status);
         
         allow update: if isOwner(userId) &&
-          request.resource.data.keys().hasAll(['clientName', 'clientPhone', 'service', 'date', 'time', 'status', 'createdAt']) &&
+          request.resource.data.keys().hasAll(['clientName', 'clientPhone', 'date', 'startTime', 'status', 'createdAt']) &&
           request.resource.data.clientName.size() >= 3 &&
           request.resource.data.clientName.size() <= 100 &&
           isValidPhone(request.resource.data.clientPhone) &&
-          request.resource.data['service'].size() >= 3 &&
-          request.resource.data['service'].size() <= 100 &&
           isValidDate(request.resource.data.date) &&
-          isValidTime(request.resource.data.time) &&
+          isValidTime(request.resource.data.startTime) &&
           isValidAppointmentStatus(request.resource.data.status);
         
         allow delete: if isOwner(userId);

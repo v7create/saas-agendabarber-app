@@ -2,25 +2,22 @@
  * HistoryPage - Página de Histórico de Atendimentos
  * 
  * Features:
- * - Histórico completo de atendimentos realizados
- * - Exportação de relatórios
+ * - Histórico completo de atendimentos realizados (status = Concluído)
+ * - Exportação de relatórios (placeholder)
  * - Busca por cliente ou serviço
- * - Filtros por período
- * - Stats cards (serviços realizados, receita, avaliação, ticket médio)
- * - Timeline detalhada com avaliações
+ * - Filtros por período (placeholder)
+ * - Stats cards (serviços realizados, receita total, ticket médio)
+ * - Timeline detalhada com notas
  * 
  * Integração:
- * - AppointmentsStore (futuramente para histórico real)
- * - FinancialStore (futuramente para stats reais)
- * - ClientsStore (futuramente para busca)
- * 
- * TODO: Implementar integração com stores reais
+ * - AppointmentsStore (para histórico real filtrado por Concluído)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
-import { MOCK_HISTORY } from '@/constants';
+import { useAppointments } from '@/hooks/useAppointments';
+import { AppointmentStatus } from '@/types';
 
 /**
  * StatCard - Card de estatística reutilizável
@@ -43,16 +40,30 @@ const StatCard: React.FC<StatCardProps> = ({ icon, title, value }) => (
  * HistoryDetailCard - Card detalhado de atendimento no histórico
  */
 interface HistoryDetailCardProps {
-  item: typeof MOCK_HISTORY[0];
+  clientName: string;
+  services: string;
+  date: string;
+  time: string;
+  duration: number;
+  price?: number;
+  notes?: string;
 }
 
-const HistoryDetailCard: React.FC<HistoryDetailCardProps> = ({ item }) => {
+const HistoryDetailCard: React.FC<HistoryDetailCardProps> = ({
+  clientName,
+  services,
+  date,
+  time,
+  duration,
+  price,
+  notes
+}) => {
   return (
     <div className="flex space-x-4">
       {/* Data e Hora */}
       <div className="text-center">
-        <p className="font-bold text-slate-100">{item.date}</p>
-        <p className="text-sm text-slate-400">{item.time}</p>
+        <p className="font-bold text-slate-100">{date}</p>
+        <p className="text-sm text-slate-400">{time}</p>
       </div>
 
       {/* Separador vertical */}
@@ -64,36 +75,29 @@ const HistoryDetailCard: React.FC<HistoryDetailCardProps> = ({ item }) => {
           <div>
             <p className="font-semibold text-slate-300 flex items-center">
               <Icon name="user" className="w-4 h-4 mr-2" />
-              {item.clientName}
+              {clientName}
             </p>
-            <p className="font-bold text-slate-100 text-lg">{item.services}</p>
+            <p className="font-bold text-slate-100 text-lg">{services}</p>
           </div>
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-400">
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
             Concluído
           </span>
         </div>
 
         {/* Duração e Preço */}
         <div className="flex items-center justify-between text-sm text-slate-400 mt-3">
-          <span>{item.duration}min</span>
-          <span className="font-bold text-slate-100 text-base">R$ {item.price}</span>
-        </div>
-
-        {/* Avaliação */}
-        <div className="flex items-center space-x-1 text-yellow-400 mt-3">
-          {[...Array(5)].map((_, i) => (
-            <Icon
-              key={i}
-              name="star"
-              className={`w-5 h-5 ${i < item.rating ? 'fill-current' : ''}`}
-            />
-          ))}
+          <span>{duration}min</span>
+          {price && (
+            <span className="font-bold text-slate-100 text-base">
+              R$ {price.toFixed(2)}
+            </span>
+          )}
         </div>
 
         {/* Observações (se houver) */}
-        {item.notes && (
+        {notes && (
           <p className="text-xs text-slate-500 italic mt-3 pt-3 border-t border-slate-700">
-            "{item.notes}"
+            "{notes}"
           </p>
         )}
       </Card>
@@ -105,8 +109,49 @@ const HistoryDetailCard: React.FC<HistoryDetailCardProps> = ({ item }) => {
  * HistoryPage - Componente principal
  */
 export const HistoryPage: React.FC = () => {
+  const { appointments } = useAppointments({ autoFetch: 'all' });
   const [searchQuery, setSearchQuery] = useState('');
   const [periodFilter, setPeriodFilter] = useState('30days');
+
+  // Filtrar apenas agendamentos concluídos
+  const completedAppointments = useMemo(() => {
+    return appointments.filter(a => a.status === AppointmentStatus.Completed);
+  }, [appointments]);
+
+  // Filtrar por busca
+  const filteredAppointments = useMemo(() => {
+    if (!searchQuery) return completedAppointments;
+    const query = searchQuery.toLowerCase();
+    return completedAppointments.filter(
+      a =>
+        a.clientName.toLowerCase().includes(query) ||
+        a.services.some(s => s.toLowerCase().includes(query))
+    );
+  }, [completedAppointments, searchQuery]);
+
+  // Calcular stats
+  const stats = useMemo(() => {
+    const servicesCount = filteredAppointments.length;
+    const totalRevenue = filteredAppointments.reduce((sum, a) => sum + (a.price || 0), 0);
+    const averageTicket = servicesCount > 0 ? totalRevenue / servicesCount : 0;
+
+    return {
+      servicesCount,
+      totalRevenue,
+      averageTicket
+    };
+  }, [filteredAppointments]);
+
+  // Formatar datas para exibição
+  const formatDate = (dateStr: string) => {
+    try {
+      const [year, month, day] = dateStr.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      return date.toLocaleDateString('pt-BR', { month: '2-digit', day: '2-digit' });
+    } catch {
+      return dateStr;
+    }
+  };
 
   return (
     <div className="space-y-6 pb-6">
@@ -155,10 +200,26 @@ export const HistoryPage: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-4">
-        <StatCard icon="scissors" title="Serviços Realizados" value="4" />
-        <StatCard icon="dollar" title="Receita Total" value="R$ 215" />
-        <StatCard icon="star" title="Avaliação Média" value="4.8" />
-        <StatCard icon="clock" title="Ticket Médio" value="R$ 54" />
+        <StatCard
+          icon="scissors"
+          title="Serviços Realizados"
+          value={stats.servicesCount.toString()}
+        />
+        <StatCard
+          icon="dollar"
+          title="Receita Total"
+          value={`R$ ${stats.totalRevenue.toFixed(0)}`}
+        />
+        <StatCard
+          icon="clock"
+          title="Ticket Médio"
+          value={`R$ ${stats.averageTicket.toFixed(0)}`}
+        />
+        <StatCard
+          icon="user"
+          title="Clientes Atendidos"
+          value={new Set(filteredAppointments.map(a => a.clientName)).size.toString()}
+        />
       </div>
 
       {/* Histórico Detalhado */}
@@ -168,24 +229,32 @@ export const HistoryPage: React.FC = () => {
           Histórico Detalhado
         </h3>
         <p className="text-sm text-slate-400 mb-6">
-          Registro completo de todos os atendimentos
+          Registro completo de todos os atendimentos realizados
         </p>
         <div className="space-y-5">
-          {MOCK_HISTORY.map((item) => (
-            <HistoryDetailCard key={item.id} item={item} />
-          ))}
+          {filteredAppointments.length > 0 ? (
+            filteredAppointments.map((appointment) => (
+              <HistoryDetailCard
+                key={appointment.id}
+                clientName={appointment.clientName}
+                services={appointment.services.join(' + ')}
+                date={formatDate(appointment.date)}
+                time={appointment.startTime}
+                duration={appointment.duration}
+                price={appointment.price}
+                notes={appointment.notes}
+              />
+            ))
+          ) : (
+            <div className="text-center py-12">
+              <Icon name="history" className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+              <p className="text-slate-400 mb-2">Nenhum atendimento no histórico</p>
+              <p className="text-sm text-slate-500">
+                Os atendimentos concluídos aparecerão aqui
+              </p>
+            </div>
+          )}
         </div>
-
-        {/* Empty State (quando não houver histórico) */}
-        {MOCK_HISTORY.length === 0 && (
-          <div className="text-center py-12">
-            <Icon name="history" className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-400 mb-2">Nenhum atendimento no histórico</p>
-            <p className="text-sm text-slate-500">
-              Os atendimentos concluídos aparecerão aqui
-            </p>
-          </div>
-        )}
       </Card>
     </div>
   );
