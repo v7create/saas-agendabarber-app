@@ -32,10 +32,12 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useServices } from '@/hooks/useServices';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { Service, Barber } from '@/types';
+import { MOCK_SERVICES } from '@/constants';
 
 // Mock data de profissionais (futuro: vir do BarbershopStore)
 const MOCK_BARBERS: Barber[] = [
@@ -67,8 +69,14 @@ const AVAILABLE_TIMES = [
 type PaymentMethod = 'online' | 'local';
 
 export const BookingPage: React.FC = () => {
+  // Navegação
+  const navigate = useNavigate();
+
   // Estado do ServicesStore
-  const { services, loading, error } = useServices({ autoFetch: true });
+  const { services: firebaseServices, loading, error } = useServices({ autoFetch: true });
+
+  // Usar MOCK_SERVICES como fallback se não houver serviços do Firebase
+  const servicesToDisplay = firebaseServices.length > 0 ? firebaseServices : MOCK_SERVICES;
 
   // Step 1: Serviços selecionados
   const [selectedServices, setSelectedServices] = useState<Service[]>([]);
@@ -163,9 +171,21 @@ export const BookingPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-slate-900 shadow-2xl shadow-violet-900/50 min-h-screen p-4 space-y-6">
+    <div className="max-w-md mx-auto bg-slate-900 shadow-2xl shadow-violet-900/50 min-h-screen p-4 space-y-6 relative">
+      {/* Botão de volta - Canto superior esquerdo */}
+      <div className="absolute top-4 left-4 z-10">
+        <button
+          onClick={() => navigate('/#/login')}
+          className="flex items-center gap-2 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all"
+          title="Voltar para login"
+        >
+          <Icon name="left" className="text-lg" />
+          <span className="text-sm font-medium">Voltar</span>
+        </button>
+      </div>
+
       {/* Header */}
-      <div>
+      <div className="pt-8">
         <h1 className="text-3xl font-bold text-slate-100">
           Faça seu Agendamento
         </h1>
@@ -184,18 +204,18 @@ export const BookingPage: React.FC = () => {
         </Card>
       )}
 
-      {/* Error State */}
-      {error && (
-        <Card className="bg-red-500/10 border-red-500">
-          <div className="flex items-center gap-2 text-red-400">
-            <Icon name="help-circle" className="text-xl" />
-            <span>{error}</span>
+      {/* Error State - apenas mostrar se não temos fallback */}
+      {error && firebaseServices.length === 0 && (
+        <Card className="bg-blue-500/10 border-blue-500">
+          <div className="flex items-center gap-2 text-blue-400">
+            <Icon name="info" className="text-xl" />
+            <span>Usando serviços padrão da barbearia</span>
           </div>
         </Card>
       )}
 
       {/* Step 1: Escolha os Serviços */}
-      {!loading && !error && (
+      {!loading && (
         <Card>
           <h2 className="font-bold text-slate-100 mb-4 text-lg flex items-center gap-2">
             <span className="flex items-center justify-center w-6 h-6 rounded-full bg-violet-600 text-white text-sm">
@@ -204,13 +224,13 @@ export const BookingPage: React.FC = () => {
             Escolha os Serviços
           </h2>
           
-          {services.length === 0 ? (
+          {servicesToDisplay.length === 0 ? (
             <div className="text-center py-6 text-slate-400">
               Nenhum serviço disponível no momento.
             </div>
           ) : (
             <div className="space-y-3">
-              {services.map(service => {
+              {servicesToDisplay.map(service => {
                 const isSelected = selectedServices.some(s => s.id === service.id);
                 
                 return (

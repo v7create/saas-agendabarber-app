@@ -176,7 +176,16 @@ function getErrorMessage(code: string): string {
     'auth/user-disabled': 'Usuário desativado',
     'auth/network-request-failed': 'Erro de conexão. Verifique sua internet',
     'auth/popup-closed-by-user': 'Login cancelado pelo usuário',
+    'auth/app-not-authorized': 'Aplicação não autorizada. Verifique as configurações do Firebase',
+    'auth/argument-error': 'Erro na validação dos dados. Tente novamente.',
   };
+
+  // Se for um código não mapeado, tenta extrair a mensagem
+  if (code && !errorMessages[code]) {
+    // Remove prefixo 'auth/' e formata
+    const cleanCode = code.replace('auth/', '');
+    console.error('Erro não mapeado do Firebase:', code);
+  }
 
   return errorMessages[code] || 'Erro ao realizar operação. Tente novamente.';
 }

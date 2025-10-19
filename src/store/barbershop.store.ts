@@ -169,7 +169,8 @@ export const useBarbershopStore = create<BarbershopState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const docRef = getSettingsDocRef();
-      await updateDoc(docRef, settings as any);
+      // Use setDoc with merge to create or update the document
+      await setDoc(docRef, settings, { merge: true });
 
       set((state) => ({ 
         ...state,

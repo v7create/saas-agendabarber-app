@@ -56,7 +56,7 @@ export const registerSchema = z
     email: emailSchema,
     password: passwordSchema,
     confirmPassword: z.string(),
-    phone: phoneSchema,
+    phone: phoneSchema.optional().or(z.literal('')),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'As senhas não coincidem',

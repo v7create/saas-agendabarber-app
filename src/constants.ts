@@ -44,15 +44,26 @@ export const MOCK_HISTORY = [
 ];
 
 export const MOCK_SERVICES: Service[] = [
-    { id: 's1', name: 'Corte', price: 40, duration: 30, icon: 'scissors', color: 'bg-blue-500/10 text-blue-400' },
+    // Serviços Básicos
+    { id: 's1', name: 'Corte Simples', price: 40, duration: 30, icon: 'scissors', color: 'bg-blue-500/10 text-blue-400' },
     { id: 's2', name: 'Barba', price: 30, duration: 30, icon: 'face', color: 'bg-green-500/10 text-green-400' },
     { id: 's3', name: 'Sobrancelha', price: 20, duration: 15, icon: 'brush', color: 'bg-yellow-500/10 text-yellow-400' },
-    { id: 's6', name: 'Corte Degradê', price: 45, duration: 40 },
+    
+    // Serviços Combinados
     { id: 's7', name: 'Corte + Barba', price: 65, duration: 60, icon: 'layer', color: 'bg-indigo-500/10 text-indigo-400' },
-    { id: 's8', name: 'Degradê + Barba', price: 70, duration: 70 },
+    
+    // Serviços Especializados
+    { id: 's6', name: 'Corte Degradê', price: 50, duration: 40 },
+    { id: 's8', name: 'Degradê + Barba', price: 75, duration: 70 },
+    { id: 's10', name: 'Corte com Tratamento', price: 70, duration: 50 },
+    { id: 's11', name: 'Design de Sobrancelha', price: 25, duration: 20 },
+    
+    // Serviços Premium
     { id: 's4', name: 'Platinado', price: 150, duration: 120 },
-    { id: 's9', name: 'Degradê + Platinado', price: 180, duration: 150 },
-    { id: 's5', name: 'Luzes', price: 120, duration: 90 },
+    { id: 's5', name: 'Coloração', price: 120, duration: 90 },
+    { id: 's9', name: 'Pacote Premium (Corte + Barba + Sobrancelha)', price: 100, duration: 90 },
+    { id: 's12', name: 'Luzes e Mechas', price: 140, duration: 120 },
+    { id: 's13', name: 'Relaxamento Capilar', price: 180, duration: 150 },
 ];
 
 

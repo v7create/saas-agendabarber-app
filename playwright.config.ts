@@ -29,8 +29,8 @@ export default defineConfig({
   ],
   
   use: {
-    // Base URL da aplicação
-    baseURL: 'http://localhost:3000',
+    // Base URL da aplicação (detecta porta automaticamente)
+    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3002',
     
     // Screenshot em falhas
     screenshot: 'only-on-failure',
@@ -48,17 +48,12 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    // Adicionar mais browsers se necessário
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
   ],
 
   // Dev server (inicia automaticamente antes dos testes)
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3000',
+    url: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3002',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
   },

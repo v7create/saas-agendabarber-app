@@ -16,9 +16,11 @@ import { Layout } from './components/Layout';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { Sidebar } from './components/Sidebar';
+import { BarbershopSetupModal } from './features/profile/components/BarbershopSetupModal';
 import { auth } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useAuthStore } from './store/auth.store';
+import { useUIStore } from './store/ui.store';
 
 // Inicializa Firebase App Check para proteção contra abuso
 import './lib/firebase-app-check';
@@ -84,6 +86,8 @@ const AppContent = () => {
 const App: React.FC = () => {
   const { user, loading, setUser, setLoading } = useAuthStore();
   const [showLoginToast, setShowLoginToast] = useState(false);
+  const [showSetupModal, setShowSetupModal] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -94,6 +98,22 @@ const App: React.FC = () => {
       if (currentUser) {
         setShowLoginToast(true);
         setTimeout(() => setShowLoginToast(false), 3000);
+        
+        // Detecta se é novo usuário pela metadata
+        const creationTime = currentUser.metadata?.creationTime;
+        const lastSignInTime = currentUser.metadata?.lastSignInTime;
+        
+        // Se foi criado nos últimos 5 segundos, é um novo usuário
+        if (creationTime && lastSignInTime && creationTime === lastSignInTime) {
+          setIsNewUser(true);
+          setShowSetupModal(true);
+        } else {
+          setIsNewUser(false);
+          setShowSetupModal(false);
+        }
+      } else {
+        setIsNewUser(false);
+        setShowSetupModal(false);
       }
     });
     
@@ -116,6 +136,15 @@ const App: React.FC = () => {
           <p className="text-sm text-slate-400">Bem-vindo de volta!</p>
         </div>
       )}
+      
+      {/* Setup Modal for New Users */}
+      {isNewUser && (
+        <BarbershopSetupModal
+          isOpen={showSetupModal}
+          onClose={() => setShowSetupModal(false)}
+        />
+      )}
+      
       <HashRouter>
         <Routes>
           <Route path="/login" element={ user ? <Navigate to="/dashboard" /> : <LoginPage /> } />
