@@ -1,220 +1,50 @@
 # 📊 Status do Projeto AgendaBarber
 
-**Última atualização:** 17/01/2025  
-**Versão:** 2.1  
-**Fase atual:** Fase 3.5 - Correção UI (0%)
+**Última atualização:** 25/10/2025  
+**Versão:** 3.0-beta  
+**Fase atual:** Beta em Produção (deploy Firebase Hosting)
 
 ---
 
-## 🎯 Progresso Geral
-
-```
-Fase 1: Segurança       ████████████████████ 100% ✅ CONCLUÍDA
-Fase 2: Arquitetura     ████████████████████ 100% ✅ CONCLUÍDA
-Fase 3.5: Correção UI   ░░░░░░░░░░░░░░░░░░░░   0% � BLOQUEADORA
-Fase 3: Performance     ░░░░░░░░░░░░░░░░░░░░   0% ⏸️ PAUSADA
-Fase 4: Qualidade       ░░░░░░░░░░░░░░░░░░░░   0% ⏳ PENDENTE
-Fase 5: UX/A11Y         ░░░░░░░░░░░░░░░░░░░░   0% ⏳ PENDENTE
-
-PROGRESSO TOTAL         ████████░░░░░░░░░░░░  40% (Fases 1-2, mas UI 26%)
-```
-
-**⚠️ REVISÃO CRÍTICA REALIZADA:**
-- Arquitetura: 100% (Stores + Hooks)
-- UI Funcional: 26% (apenas Financial + Services)
-- **Problema:** 75% dos botões não conectados aos stores
+## ✅ Conquistas desta etapa
+- Deploy de produção publicado (`https://saas-barbearia-8d49a.web.app`) com validação automática de variáveis via `scripts/check-env.mjs`.
+- Integração de ambiente segura: `.env.production` configurado, documentação de deploy adicionada (`docs/DEPLOYMENT.md`) e README atualizado.
+- Clientes: card mobile-first com divulgação progressiva, atalho WhatsApp e métrica compacta — pronto para testes reais.
+- Tooling: `npm run build` bloqueia builds sem credenciais, `npm run preview` segue o mesmo fluxo e `npm run lint` mantém o baseline zero TS errors.
 
 ---
 
-## ✅ Fase 1: Segurança - CONCLUÍDA
+## 🔍 Estado por pilar
 
-**Duração:** ~2 horas  
-**Status:** ✅ 100% completa  
-**Detalhes:** Ver `FASE_1_CONCLUIDA.md`
-
-### Conquistas
-- ✅ Variáveis de ambiente configuradas
-- ✅ Firestore Rules deployed
-- ✅ Validação Zod implementada
-- ✅ App Check configurado com reCAPTCHA v3 (SITE KEY: `6LcQzOorAAAAAHKJpdjBHw02JUJStJIiaT0iTxWP`)
-- ✅ Debug mode ativo para desenvolvimento
-- ✅ Documentação atualizada
-
-### Arquivos Criados/Modificados
-- `src/lib/validations.ts` (novo)
-- `src/lib/firebase-app-check.ts` (novo)
-- `.env.example` (atualizado)
-- `firestore.rules` (deployed)
-- `src/firebase.ts` (exporta app)
-- `src/App.tsx` (import App Check)
-- `.github/copilot-instructions.md` (atualizado)
+| Pilar | Situação | Observações |
+|-------|----------|-------------|
+| Segurança | 🟢 Estável | App Check ativo, regras Firestore publicadas, nenhum segredo versionado. |
+| Arquitetura | 🟢 Estável | Feature-based + stores/hook layer consolidadas. |
+| UI/UX | 🟡 Em refinamento | Clientes ajustado; próximas telas seguirão o mesmo padrão mobile-first. |
+| Testes | 🟡 Parcial | Playwright configurado com 20/21 cenários verdes; suite precisa cobrir novas interações. |
+| Deploy | 🟢 Estável | Build validado, hosting atualizado e documentação de release criada. |
 
 ---
 
-## ✅ Fase 2: Arquitetura - 100% CONCLUÍDA
-
-**Duração:** 3 dias  
-**Status:** ✅ 100% completa  
-**Prioridade:** Alta
-**Data de Conclusão:** 17/10/2025
-
-### ✅ Objetivos Completados
-1. ✅ **8 Zustand Stores criados** (100%)
-   - AuthStore - Autenticação Firebase
-   - AppointmentsStore - Agendamentos com real-time
-   - ClientsStore - Gestão de clientes
-   - FinancialStore - Transações e estatísticas
-   - ServicesStore - Catálogo de serviços
-   - BarbershopStore - Configurações (profissionais, horários, pagamentos, perfil)
-   - NotificationsStore - Notificações real-time
-   - UIStore - Estado transiente (modais, toasts, sidebar)
-
-2. ✅ **Camada de Serviços** (100%)
-   - BaseService genérico com TypeScript generics
-   - AppointmentService especializado
-   - Pattern de CRUD padronizado
-
-3. ✅ **Custom Hooks** (100%)
-   - useAuth - Autenticação com validação
-   - useAppointments - Agendamentos CRUD
-   - useClients - Clientes CRUD
-   - useFinancial - Transações e stats
-   - useServices - Catálogo de serviços
-   - useBarbershop - Configurações da barbearia
-   - useNotifications - Notificações real-time
-   - useUI - Controle de modais/toasts
-
-4. ✅ **10 Páginas Extraídas** (~4,100 linhas)
-   - DashboardPage (587 linhas) - 4 stores, 5 modais
-   - ClientsPage (520+ linhas) - Search, filtros, CRUD
-   - FinancialPage (500+ linhas) - Stats, gráficos
-   - AppointmentsPage (650+ linhas) - Timeline, filtros
-   - AgendaPage (650+ linhas) - 3 views (Timeline/Kanban/Calendar)
-   - ProfilePage (200+ linhas) - Perfil público da barbearia
-   - ShopSettingsPage (400+ linhas) - Profissionais, horários, pagamentos
-   - ServicesSettingsPage (350+ linhas) - CRUD de serviços
-   - AppSettingsPage (350+ linhas) - Tema, conta, notificações
-   - HistoryPage (193 linhas) - Histórico de atendimentos ✅ NOVA!
-
-5. ✅ **Refatoração do Monólito** (100%)
-   - ✅ 10 de 10 páginas extraídas
-   - ✅ HistoryPage removida do monólito
-   - ✅ Zero erros TypeScript
-   - ✅ Todas as importações funcionando
+## 🎯 Próximos passos recomendados
+1. **QA funcional mobile:** Exercitar fluxo completo no dispositivo (login → cliente → agendamento → conclusão) e registrar gaps de UX.
+2. **Cobertura E2E:** Atualizar specs para refletir o novo card de clientes e reativar o teste de criação de agendamento (hoje `skip`).
+3. **Dashboard & Agenda:** Aplicar padrão de divulgação progressiva, garantir reatividade dos KPIs e revisar gatilhos de modal.
+4. **Monitoring:** Habilitar GA4/Analytics no projeto e configurar regras básicas de erro/performance.
+5. **Backlog Releases:** Priorizar integração Appointments ↔ Financial (transação automática) e History com dados reais para consolidar métricas.
 
 ---
 
-## � Fase 3.5: Correção UI - BLOQUEADORA
+## 📦 Checklist pós-deploy
+- [x] `npm run build` com `.env.production` validado.
+- [x] Deploy Firebase Hosting concluído sem erros.
+- [x] Documentação de release (`docs/DEPLOYMENT.md` + seção no README) publicada.
+- [ ] Registrar métricas de acesso/uso após 48h de monitoramento.
+- [ ] Revisar feedback de usuários piloto e alimentar backlog.
 
-**Duração Estimada:** 6-8 horas  
-**Status:** � 0% completa  
-**Prioridade:** 🔴 BLOQUEADORA (descoberto após auditoria crítica)
-**Data de Início:** 17/01/2025
+---
 
-### 🚨 REVISÃO CRÍTICA REALIZADA
-
-**Documentação:**
-- `docs/AUDITORIA_DADOS_FASE_3.5.md` (auditoria completa)
-- `docs/PLANO_CORRECAO_UI.md` (plano de ação detalhado)
-
-**Problema Identificado:**
-Auditoria com screenshots revelou que **apenas 26% do sistema funciona** (2 de 8 features).
-
-**Root Cause:**
-```
-✅ Stores (Zustand): 100% implementados e funcionais
-✅ Hooks: 100% implementados e funcionais
-✅ Firebase: 100% configurado e testado
-❌ UI Components: 75% desconectados dos stores
-```
-
-### 📊 Status Real por Feature
-
-| Feature | Arquitetura | UI | Status Real |
-|---------|-------------|----|----|
-| **Financial** | ✅ 100% | ✅ 100% | 🟢 FUNCIONA |
-| **Services** | ✅ 100% | ✅ 100% | 🟢 FUNCIONA |
-| **Clients** | ✅ 100% | ❌ 0% | 🔴 QUEBRADO |
-| **Dashboard** | ✅ 100% | ❌ 10% | 🔴 QUEBRADO |
-| **Agenda** | ✅ 100% | ❌ 0% | � QUEBRADO |
-| **Appointments** | ✅ 100% | ❌ 0% | 🔴 QUEBRADO |
-| **History** | ✅ 100% | ❌ 0% | 🔴 MOCK DATA |
-| **Barbershop** | ✅ 100% | ⚠️ ? | 🟡 NÃO TESTADO |
-
-**Score Geral REAL:** 🔴 **26%** (apenas 2/8 features funcionam)
-
-### 🐛 Problemas Específicos (com Evidências)
-
-#### 1. ClientsPage - Completamente Quebrada 🔴
-- **Evidência:** Screenshot do usuário
-- **Problema:** Botão "+ Novo Cliente" não abre modal
-- **Stats:** Mostram "0" sempre
-- **Lista:** Vazia mesmo tentando criar
-- **Tempo de Correção:** 1-1.5h
-
-#### 2. DashboardPage - 4 Botões Não Funcionam 🔴
-- **Evidência:** Screenshot do usuário
-- **Problemas:**
-  1. Botão "+ Novo Agendamento" (3 locais) → Não abre modal
-  2. Botão "Cadastrar Cliente" → Não funciona
-  3. KPIs estáticos (não reagem a mudanças)
-- **Root:** Tentam `navigate('/appointments/new')` (rota inexistente)
-- **Tempo de Correção:** 2-2.5h
-
-#### 3. AgendaPage - Botões Sem Resposta 🔴
-- **Evidência:** Screenshot do usuário
-- **Problemas:**
-  1. Botão "+" (top right) → Não abre modal
-  2. Botões "+ Agendar" (timeline) → Sem resposta
-- **Tempo de Correção:** 1-1.5h
-
-#### 4. AppointmentsPage - Não Testável 🔴
-- **Problema:** Impossível testar (não consegue criar agendamentos)
-- **Dependência:** Corrigir Dashboard/Agenda primeiro
-- **Tempo de Correção:** 1h (após dependências)
-
-#### 5. HistoryPage - 100% Fake 🔴
-- **Problema:** Usa constante `MOCK_HISTORY` hardcoded
-- **Impacto:** Página completamente falsa
-- **Tempo de Correção:** 30min
-- **Solução:** Listener em appointments.store.ts
-
-#### 3. Dashboard Não Reativo ⚠️
-- **Problema:** KPIs não recalculam automaticamente
-- **Impacto:** Dados desatualizados até refresh
-- **Solução:** Usar useMemo com dependências corretas
-
-#### 4. HistoryPage com Dados Mockados ❌
-- **Problema:** Usa MOCK_HISTORY de constants.ts
-- **Impacto:** Página completamente fake
-- **Solução:** Filtrar appointments por status "Concluído"
-
-### ⏳ Tasks em Andamento
-
-**Prioridade 1: Corrigir Bug Crítico** (15 min)
-- [ ] Corrigir botão "Novo Agendamento"
-- [ ] Verificar modal de criação
-
-**Prioridade 2: Appointments ↔ Financial** (30 min)
-- [ ] Auto-criar transação ao concluir agendamento
-
-**Prioridade 3: Dashboard Reativo** (20 min)
-- [ ] Recalcular KPIs com useMemo
-
-**Prioridade 4: HistoryPage Real** (25 min)
-- [ ] Substituir MOCK_HISTORY
-- [ ] Calcular stats dinamicamente
-
-**Prioridade 5: Validação BookingPage** (10 min)
-- [ ] Verificar uso de dados reais
-
-**Validação Final** (35 min)
-- [ ] Teste fluxo completo: Serviço → Cliente → Agendamento → Concluir → Histórico
-
-### Estrutura de Pastas Implementada
-```
-src/
-├── features/           # ✅ Features por domínio (10 features completas)
+**Próxima revisão sugerida:** após finalizar QA mobile e ampliar a suíte E2E.├── features/           # ✅ Features por domínio (10 features completas)
 │   ├── auth/          # ✅ Login/Register
 │   ├── booking/       # ✅ Página pública de agendamento
 │   ├── dashboard/     # ✅ Dashboard principal

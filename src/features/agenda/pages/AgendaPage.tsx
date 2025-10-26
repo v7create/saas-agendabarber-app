@@ -34,6 +34,7 @@ import { Modal } from '@/components/Modal';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useUI } from '@/hooks/useUI';
 import { Appointment, AppointmentStatus } from '@/types';
+import { CreateAppointmentForm } from '@/features/appointments/components/CreateAppointmentForm';
 
 // ===== Sub-Components =====
 
@@ -45,13 +46,109 @@ interface TimelineSlotProps {
   appointment?: Appointment;
   onNewAppointment?: (time: string) => void;
   onAppointmentClick?: (appointment: Appointment) => void;
+  onEditAppointment?: (appointment: Appointment) => void;
+  onCompleteAppointment?: (appointment: Appointment) => void;
+  onCancelAppointment?: (appointment: Appointment) => void;
+  statusActionLoading?: boolean;
 }
+
+interface AppointmentActionMenuProps {
+  appointment: Appointment;
+  onEdit?: (appointment: Appointment) => void;
+  onComplete?: (appointment: Appointment) => void;
+  onCancel?: (appointment: Appointment) => void;
+  disabledActions?: boolean;
+}
+
+const AppointmentActionMenu: React.FC<AppointmentActionMenuProps> = ({
+  appointment,
+  onEdit,
+  onComplete,
+  onCancel,
+  disabledActions = false
+}) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const isCompleted = appointment.status === AppointmentStatus.Completed;
+  const isCancelled = appointment.status === AppointmentStatus.Cancelled;
+  const disableComplete = disabledActions || isCompleted || isCancelled;
+  const disableCancel = disabledActions || isCancelled;
+
+  const handleToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setMenuOpen((prev) => !prev);
+  };
+
+  const handleAction = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    action?: (appointment: Appointment) => void
+  ) => {
+    if ((disableComplete && action === onComplete) || (disableCancel && action === onCancel)) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    setMenuOpen(false);
+    action?.(appointment);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={handleToggle}
+        className="p-1 text-slate-400 hover:text-white"
+      >
+        <Icon name="dots" className="w-5 h-5" />
+      </button>
+      {menuOpen && (
+        <div className="absolute right-0 mt-2 w-44 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-10">
+          <button
+            onClick={(event) => handleAction(event, onEdit)}
+            className="w-full flex items-center px-4 py-2 text-sm text-slate-200 hover:bg-slate-600 rounded-t-lg"
+          >
+            <Icon name="pencil" className="w-4 h-4 mr-2" />
+            Editar
+          </button>
+          <button
+            disabled={disableComplete}
+            onClick={(event) => handleAction(event, onComplete)}
+            className={`w-full flex items-center px-4 py-2 text-sm hover:bg-slate-600 ${
+              disableComplete
+                ? 'text-slate-500 cursor-not-allowed'
+                : 'text-green-400'
+            }`}
+          >
+            <Icon name="check" className="w-4 h-4 mr-2" />
+            Concluir
+          </button>
+          <button
+            disabled={disableCancel}
+            onClick={(event) => handleAction(event, onCancel)}
+            className={`w-full flex items-center px-4 py-2 text-sm rounded-b-lg hover:bg-slate-600 ${
+              disableCancel ? 'text-slate-500 cursor-not-allowed' : 'text-red-400'
+            }`}
+          >
+            <Icon name="x" className="w-4 h-4 mr-2" />
+            Cancelar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const TimelineSlot: React.FC<TimelineSlotProps> = ({
   time,
   appointment,
   onNewAppointment,
-  onAppointmentClick
+  onAppointmentClick,
+  onEditAppointment,
+  onCompleteAppointment,
+  onCancelAppointment,
+  statusActionLoading
 }) => {
   if (appointment) {
     return (
@@ -67,22 +164,33 @@ const TimelineSlot: React.FC<TimelineSlotProps> = ({
           >
             <Card className="bg-slate-800 hover:bg-slate-750 transition-colors">
               <div className="flex justify-between items-start">
-                <div>
+                <div className="pr-2">
                   <p className="font-bold text-slate-100">{appointment.clientName}</p>
                   <p className="text-sm text-slate-300">{appointment.services.join(' + ')}</p>
                   <p className="text-xs text-slate-400 mt-1">{appointment.duration}min</p>
                 </div>
-                <span
-                  className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                    appointment.status === AppointmentStatus.Confirmed
-                      ? 'bg-violet-500/20 text-violet-400'
-                      : appointment.status === AppointmentStatus.Pending
-                      ? 'bg-yellow-500/20 text-yellow-400'
-                      : 'bg-slate-500/20 text-slate-400'
-                  }`}
-                >
-                  {appointment.status}
-                </span>
+                <div className="flex items-start space-x-2">
+                  <span
+                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                      appointment.status === AppointmentStatus.Confirmed
+                        ? 'bg-violet-500/20 text-violet-400'
+                        : appointment.status === AppointmentStatus.Pending
+                        ? 'bg-yellow-500/20 text-yellow-400'
+                        : appointment.status === AppointmentStatus.Completed
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-red-500/20 text-red-400'
+                    }`}
+                  >
+                    {appointment.status}
+                  </span>
+                  <AppointmentActionMenu
+                    appointment={appointment}
+                    onEdit={onEditAppointment}
+                    onComplete={onCompleteAppointment}
+                    onCancel={onCancelAppointment}
+                    disabledActions={statusActionLoading}
+                  />
+                </div>
               </div>
             </Card>
           </button>
@@ -121,15 +229,24 @@ interface KanbanColumnProps {
   appointments: Appointment[];
   color: string;
   onAppointmentClick: (appointment: Appointment) => void;
+  onEditAppointment?: (appointment: Appointment) => void;
+  onCompleteAppointment?: (appointment: Appointment) => void;
+  onCancelAppointment?: (appointment: Appointment) => void;
+  statusActionLoading?: boolean;
 }
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({
   title,
+  status,
   appointments,
   color,
-  onAppointmentClick
+  onAppointmentClick,
+  onEditAppointment,
+  onCompleteAppointment,
+  onCancelAppointment,
+  statusActionLoading
 }) => (
-  <div className="flex-1 min-w-0">
+  <div className="flex-1 min-w-0" data-status={status}>
     <div className={`px-3 py-2 rounded-lg ${color} mb-3`}>
       <p className="font-bold text-slate-100 text-sm">{title}</p>
       <p className="text-xs text-slate-300">{appointments.length} agendamentos</p>
@@ -142,10 +259,39 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
             onClick={() => onAppointmentClick(app)}
             className="w-full text-left"
           >
-            <Card className="!p-3 hover:bg-slate-750 transition-colors">
-              <p className="font-bold text-slate-100 text-sm">{app.startTime}</p>
-              <p className="text-xs text-slate-300 mt-1">{app.clientName}</p>
-              <p className="text-xs text-slate-400 mt-1">{app.services.join(', ')}</p>
+            <Card className="!p-3 hover:bg-slate-750 transition-colors space-y-2">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-bold text-slate-100 text-sm">{app.startTime}</p>
+                  <p className="text-xs text-slate-300 mt-1">{app.clientName}</p>
+                  <p className="text-xs text-slate-400 mt-1">{app.services.join(', ')}</p>
+                </div>
+                <AppointmentActionMenu
+                  appointment={app}
+                  onEdit={onEditAppointment}
+                  onComplete={onCompleteAppointment}
+                  onCancel={onCancelAppointment}
+                  disabledActions={statusActionLoading}
+                />
+              </div>
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>{app.duration} min</span>
+                <span
+                  className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    app.status === AppointmentStatus.Confirmed
+                      ? 'bg-violet-500/20 text-violet-400'
+                      : app.status === AppointmentStatus.Pending
+                      ? 'bg-yellow-500/20 text-yellow-400'
+                      : app.status === AppointmentStatus.Completed
+                      ? 'bg-green-500/20 text-green-400'
+                      : app.status === AppointmentStatus.Cancelled
+                      ? 'bg-red-500/20 text-red-400'
+                      : 'bg-slate-500/20 text-slate-400'
+                  }`}
+                >
+                  {app.status}
+                </span>
+              </div>
             </Card>
           </button>
         ))
@@ -166,12 +312,20 @@ interface CalendarViewProps {
   appointments: Appointment[];
   onAppointmentClick: (appointment: Appointment) => void;
   onNewAppointment: (time: string) => void;
+  onEditAppointment?: (appointment: Appointment) => void;
+  onCompleteAppointment?: (appointment: Appointment) => void;
+  onCancelAppointment?: (appointment: Appointment) => void;
+  statusActionLoading?: boolean;
 }
 
 const CalendarView: React.FC<CalendarViewProps> = ({
   appointments,
   onAppointmentClick,
-  onNewAppointment
+  onNewAppointment,
+  onEditAppointment,
+  onCompleteAppointment,
+  onCancelAppointment,
+  statusActionLoading
 }) => {
   // Gera slots de 30 em 30 minutos das 8h às 20h
   const timeSlots = useMemo(() => {
@@ -196,6 +350,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             appointment={appointment}
             onNewAppointment={onNewAppointment}
             onAppointmentClick={onAppointmentClick}
+            onEditAppointment={onEditAppointment}
+            onCompleteAppointment={onCompleteAppointment}
+            onCancelAppointment={onCancelAppointment}
+            statusActionLoading={statusActionLoading}
           />
         );
       })}
@@ -227,6 +385,10 @@ const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({
             ? 'bg-violet-500/20 text-violet-400'
             : appointment.status === AppointmentStatus.Pending
             ? 'bg-yellow-500/20 text-yellow-400'
+            : appointment.status === AppointmentStatus.Completed
+            ? 'bg-green-500/20 text-green-400'
+            : appointment.status === AppointmentStatus.Cancelled
+            ? 'bg-red-500/20 text-red-400'
             : 'bg-slate-500/20 text-slate-400'
         }`}
       >
@@ -287,8 +449,8 @@ type ViewMode = 'timeline' | 'kanban' | 'calendar';
 
 export const AgendaPage: React.FC = () => {
   // Hooks
-  const { appointments, filterByDate, filterByStatus } = useAppointments({ autoFetch: 'upcoming' });
-  const { openModal, closeModal, isModalOpen } = useUI();
+  const { appointments, filterByDate, filterByStatus, updateStatus, fetchUpcoming } = useAppointments({ autoFetch: 'upcoming' });
+  const { openModal, closeModal, isModalOpen, success, error: showError } = useUI();
 
   // State
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -298,6 +460,9 @@ export const AgendaPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('timeline');
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [prefilledTime, setPrefilledTime] = useState<string | undefined>(undefined);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [appointmentToComplete, setAppointmentToComplete] = useState<Appointment | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Filtered appointments for selected date
   const dayAppointments = useMemo(() => {
@@ -350,15 +515,113 @@ export const AgendaPage: React.FC = () => {
   // Handlers
   const handleAppointmentClick = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
+    setEditingAppointment(null);
+    setAppointmentToComplete(null);
     openModal('appointmentDetail');
   };
 
   const handleNewAppointment = (time?: string) => {
-    // Open new appointment modal with pre-filled time
-    if (time) {
-      setPrefilledTime(time);
+    // Guarda horário pré-selecionado quando vier da timeline
+    setPrefilledTime(time);
+    setEditingAppointment(null);
+    setAppointmentToComplete(null);
+    openModal('newAppointment');
+  };
+
+  const handleEditAppointment = (appointment: Appointment) => {
+    setEditingAppointment(appointment);
+    setPrefilledTime(undefined);
+    setAppointmentToComplete(null);
+    if (isModalOpen('newAppointment')) {
+      closeModal('newAppointment');
     }
-    openModal('newAppointmentAgenda');
+    if (isModalOpen('appointmentDetail')) {
+      closeModal('appointmentDetail');
+    }
+    openModal('editAppointment');
+  };
+
+  const handleStatusChange = async (
+    appointment: Appointment,
+    status: AppointmentStatus,
+    successMessage: string,
+    errorMessage: string
+  ): Promise<boolean> => {
+    if (actionLoading) {
+      return false;
+    }
+
+    setActionLoading(true);
+    try {
+      await updateStatus(appointment.id, status);
+      await fetchUpcoming();
+      setSelectedAppointment((prev) =>
+        prev && prev.id === appointment.id ? { ...prev, status } : prev
+      );
+      setEditingAppointment((prev) =>
+        prev && prev.id === appointment.id ? { ...prev, status } : prev
+      );
+      setAppointmentToComplete((prev) =>
+        prev && prev.id === appointment.id ? { ...prev, status } : prev
+      );
+      success(successMessage);
+      return true;
+    } catch (error) {
+      console.error('Erro ao atualizar status do agendamento:', error);
+      showError(errorMessage);
+      return false;
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelAppointment = (appointment: Appointment) => {
+    void handleStatusChange(
+      appointment,
+      AppointmentStatus.Cancelled,
+      'Agendamento cancelado.',
+      'Não foi possível cancelar o agendamento.'
+    );
+  };
+
+  const handleOpenCompleteModal = (appointment: Appointment) => {
+    setAppointmentToComplete(appointment);
+    openModal('confirmCompleteAgenda');
+  };
+
+  const handleCloseCompleteModal = () => {
+    closeModal('confirmCompleteAgenda');
+    setAppointmentToComplete(null);
+  };
+
+  const handleConfirmComplete = async () => {
+    if (!appointmentToComplete) {
+      return;
+    }
+
+    const result = await handleStatusChange(
+      appointmentToComplete,
+      AppointmentStatus.Completed,
+      'Agendamento concluído com sucesso!',
+      'Não foi possível concluir o agendamento.'
+    );
+
+    if (result) {
+      handleCloseCompleteModal();
+    }
+  };
+
+  const handleCompleteAppointment = (appointment: Appointment) => {
+    handleOpenCompleteModal(appointment);
+  };
+
+  const handleEditModalClose = () => {
+    closeModal('editAppointment');
+    setEditingAppointment(null);
+  };
+
+  const handleEditSuccess = () => {
+    handleEditModalClose();
   };
 
   // Kanban columns
@@ -505,6 +768,10 @@ export const AgendaPage: React.FC = () => {
               appointments={dayAppointments}
               onAppointmentClick={handleAppointmentClick}
               onNewAppointment={handleNewAppointment}
+              onEditAppointment={handleEditAppointment}
+              onCompleteAppointment={handleCompleteAppointment}
+              onCancelAppointment={handleCancelAppointment}
+              statusActionLoading={actionLoading}
             />
           </Card>
         )}
@@ -520,6 +787,10 @@ export const AgendaPage: React.FC = () => {
                   appointments={column.appointments}
                   color={column.color}
                   onAppointmentClick={handleAppointmentClick}
+                  onEditAppointment={handleEditAppointment}
+                  onCompleteAppointment={handleCompleteAppointment}
+                  onCancelAppointment={handleCancelAppointment}
+                  statusActionLoading={actionLoading}
                 />
               ))}
             </div>
@@ -534,6 +805,10 @@ export const AgendaPage: React.FC = () => {
               appointments={dayAppointments}
               onAppointmentClick={handleAppointmentClick}
               onNewAppointment={handleNewAppointment}
+              onEditAppointment={handleEditAppointment}
+              onCompleteAppointment={handleCompleteAppointment}
+              onCancelAppointment={handleCancelAppointment}
+              statusActionLoading={actionLoading}
             />
           </Card>
         )}
@@ -541,41 +816,78 @@ export const AgendaPage: React.FC = () => {
 
       {/* Modals */}
       <Modal
-        isOpen={isModalOpen('newAppointmentAgenda')}
+        isOpen={isModalOpen('newAppointment')}
         onClose={() => {
-          closeModal('newAppointmentAgenda');
+          closeModal('newAppointment');
           setPrefilledTime(undefined);
         }}
         title="Novo Agendamento"
       >
-        <div className="space-y-4">
-          <p className="text-sm text-slate-400">
-            Horário pré-selecionado: <span className="text-slate-200 font-semibold">{prefilledTime || '--:--'}</span>
-          </p>
-          <p className="text-sm text-slate-300">
-            Utilize o formulário de agendamento no Dashboard para criar um novo agendamento com todos os detalhes.
-          </p>
-          <div className="flex gap-3 pt-4">
-            <button
-              onClick={() => {
-                closeModal('newAppointmentAgenda');
-                setPrefilledTime(undefined);
-              }}
-              className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-100 py-2 rounded-lg transition"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={() => {
-                closeModal('newAppointmentAgenda');
-                window.location.hash = '#/dashboard';
-              }}
-              className="flex-1 bg-violet-600 hover:bg-violet-500 text-white py-2 rounded-lg transition"
-            >
-              Ir ao Dashboard
-            </button>
+        <CreateAppointmentForm
+          onClose={() => {
+            closeModal('newAppointment');
+            setPrefilledTime(undefined);
+          }}
+          onSuccess={() => setPrefilledTime(undefined)}
+          defaultValues={{
+            date: selectedDate,
+            startTime: prefilledTime || '',
+          }}
+        />
+      </Modal>
+      <Modal
+        isOpen={isModalOpen('confirmCompleteAgenda') && !!appointmentToComplete}
+        onClose={handleCloseCompleteModal}
+        title="Confirmar Conclusão"
+      >
+        {appointmentToComplete && (
+          <div className="space-y-4">
+            <p className="text-slate-300">
+              Deseja marcar {appointmentToComplete.clientName} às {appointmentToComplete.startTime} como concluído?
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={handleCloseCompleteModal}
+                disabled={actionLoading}
+                className="flex-1 bg-slate-700 text-slate-200 font-bold py-2 rounded-lg hover:bg-slate-600 disabled:bg-slate-800"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmComplete}
+                disabled={actionLoading}
+                className="flex-1 bg-violet-600 text-white font-bold py-2 rounded-lg hover:bg-violet-700 disabled:bg-slate-500"
+              >
+                {actionLoading ? 'Concluindo...' : 'Concluir'}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+      </Modal>
+      <Modal
+        isOpen={isModalOpen('editAppointment') && !!editingAppointment}
+        onClose={handleEditModalClose}
+        title="Editar Agendamento"
+      >
+        {editingAppointment && (
+          <CreateAppointmentForm
+            mode="edit"
+            appointmentId={editingAppointment.id}
+            onClose={handleEditModalClose}
+            onSuccess={handleEditSuccess}
+            defaultValues={{
+              clientName: editingAppointment.clientName,
+              clientPhone: editingAppointment.clientPhone,
+              date: editingAppointment.date,
+              startTime: editingAppointment.startTime,
+              services: editingAppointment.services,
+              notes: editingAppointment.notes,
+              duration: editingAppointment.duration,
+              price: editingAppointment.price,
+              status: editingAppointment.status,
+            }}
+          />
+        )}
       </Modal>
       <Modal
         isOpen={isModalOpen('appointmentDetail')}

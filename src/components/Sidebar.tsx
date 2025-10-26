@@ -15,6 +15,7 @@ const mainNavItems = [
     { path: '/agenda', icon: 'calendar', label: 'Agenda' },
     { path: '/clients', icon: 'users', label: 'Clientes' },
     { path: '/financial', icon: 'dollar', label: 'Financeiro' },
+    { path: '/history', icon: 'history', label: 'Histórico' },
 ];
 
 const settingsNavItems = [

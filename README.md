@@ -143,9 +143,10 @@
 3. **Configure as variáveis de ambiente**
    ```bash
    cp .env.example .env.local
+   cp .env.example .env.production
    ```
    
-   Edite `.env.local` e adicione suas credenciais Firebase:
+   Edite `.env.local` para desenvolvimento e `.env.production` com as chaves reais de produção (não versionar):
    ```env
    VITE_FIREBASE_API_KEY=your_api_key
    VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
@@ -173,6 +174,8 @@
    ```
    http://localhost:3000
    ```
+
+> ℹ️ Consulte o documento [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) para orientações completas de deploy seguro.
 
 ---
 
@@ -272,8 +275,8 @@ A documentação completa do projeto está organizada na pasta **`docs/`**:
 npm run dev              # Inicia servidor de desenvolvimento (porta 3000)
 
 # Build
-npm run build            # Build para produção
-npm run preview          # Preview do build
+npm run build            # Build para produção (valida variáveis obrigatórias)
+npm run preview          # Preview do build com validação de variáveis
 
 # Qualidade
 npm run lint             # Roda verificação TypeScript

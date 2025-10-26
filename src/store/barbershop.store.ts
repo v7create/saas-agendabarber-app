@@ -57,6 +57,7 @@ export interface BarbershopSettings {
     phone: string;
     address: string;
     description?: string;
+    defaultPaymentMethod?: string;
     // Profile fields
     username?: string;
     coverImageUrl?: string;
@@ -84,6 +85,7 @@ const defaultSettings: BarbershopSettings = {
     phone: '',
     address: '',
     description: '',
+    defaultPaymentMethod: 'Dinheiro',
   },
 };
 

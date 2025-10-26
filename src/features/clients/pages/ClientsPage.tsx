@@ -30,7 +30,7 @@
  * - Filtros múltiplos
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { Modal } from '@/components/Modal';
@@ -38,6 +38,7 @@ import { useClients } from '@/hooks/useClients';
 import { useUI } from '@/hooks/useUI';
 import { Client, ClientStatus } from '@/types';
 import { CreateClientData, UpdateClientData } from '@/store/clients.store';
+import { formatPhone } from '@/lib/validations';
 
 // ===== Sub-Components =====
 
@@ -71,103 +72,239 @@ interface ClientCardProps {
   onDelete: (client: Client) => void;
 }
 
+const formatDisplayName = (fullName: string) => {
+  if (!fullName) return 'Cliente';
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'Cliente';
+  if (parts.length === 1) return parts[0];
+  const first = parts[0];
+  const lastInitial = parts[parts.length - 1].charAt(0).toUpperCase();
+  return `${first} ${lastInitial}.`;
+};
+
+const formatCurrencyBRL = (value: number) => {
+  if (!Number.isFinite(value)) return 'R$ 0,00';
+  return value.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2
+  });
+};
+
+const formatRatingLabel = (rating: number) => {
+  if (!Number.isFinite(rating)) return '0';
+  const normalized = Math.min(5, Math.max(0, rating));
+  const formatted = normalized.toFixed(1);
+  return formatted.endsWith('.0') ? formatted.slice(0, -2) : formatted.replace('.', ',');
+};
+
+const formatLastVisitLabel = (value?: string | null) => {
+  if (!value) return 'Nunca';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  const formatted = new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: 'short'
+  }).format(date);
+  return formatted.replace('.', '');
+};
+
+const buildWhatsAppLink = (phone?: string | null) => {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length < 10) return '';
+  const withCountry = digits.startsWith('55') ? digits : `55${digits}`;
+  return `https://wa.me/${withCountry}`;
+};
+
 const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const displayName = useMemo(() => formatDisplayName(client.name), [client.name]);
+  const lastVisit = useMemo(() => formatLastVisitLabel(client.lastVisit), [client.lastVisit]);
+  const ratingLabel = useMemo(() => formatRatingLabel(client.rating), [client.rating]);
+  const totalSpent = useMemo(() => formatCurrencyBRL(client.spent), [client.spent]);
+  const whatsappLink = useMemo(() => buildWhatsAppLink(client.phone), [client.phone]);
+
+  const handleCardToggle = useCallback(() => {
+    setExpanded((prev) => !prev);
+    setMenuOpen(false);
+  }, []);
+
+  const handleKeyToggle = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleCardToggle();
+    }
+  }, [handleCardToggle]);
+
+  const handleMenuToggle = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    setMenuOpen((prev) => !prev);
+  }, []);
+
+  const handleEdit = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    setMenuOpen(false);
+    onEdit(client);
+  }, [client, onEdit]);
+
+  const handleDelete = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    setMenuOpen(false);
+    onDelete(client);
+  }, [client, onDelete]);
+
+  const handleWhatsAppClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (!whatsappLink) return;
+    window.open(whatsappLink, '_blank', 'noopener,noreferrer');
+  }, [whatsappLink]);
 
   return (
-    <Card className="relative" data-testid="client-card">
-      {/* Status e Menu */}
-      <div className="absolute top-4 right-4 flex items-center space-x-2">
-        <span
-          className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-            client.status === ClientStatus.Active
-              ? 'bg-violet-500/20 text-violet-400'
-              : 'bg-slate-600 text-slate-300'
-          }`}
+    <Card className="relative !p-4" data-testid="client-card">
+      <div className="flex items-start">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={handleCardToggle}
+          onKeyDown={handleKeyToggle}
+          aria-expanded={expanded}
+          className="flex-1 cursor-pointer select-none"
         >
-          {client.status}
-        </span>
-        <div className="relative">
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="p-1 text-slate-400 hover:text-white"
+          <div className="flex items-start space-x-3">
+            <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center font-semibold text-violet-300 text-lg">
+              {client.avatarInitials}
+            </div>
+            <div className="flex-1 space-y-2">
+              <div>
+                <p className="text-base font-semibold text-slate-100">{displayName}</p>
+                <div className="flex items-center space-x-2 text-sm text-slate-400">
+                  <span>{client.phone}</span>
+                  {whatsappLink && (
+                    <button
+                      type="button"
+                      onClick={handleWhatsAppClick}
+                      className="p-1 rounded-full bg-green-500/10 text-green-400 hover:bg-green-500/20 transition"
+                      aria-label="Abrir WhatsApp"
+                    >
+                      <Icon name="whatsapp" className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-400">
+                <div className="flex items-center space-x-1">
+                  <Icon name="star" className="w-4 h-4 text-yellow-400" />
+                  <span className="text-slate-200 font-semibold">{ratingLabel}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Icon name="calendar" className="w-4 h-4 text-slate-500" />
+                  <span>{lastVisit}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Icon name="door" className="w-4 h-4 text-slate-500" />
+                  <span>{client.visits} visita{client.visits === 1 ? '' : 's'}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Icon name="wallet" className="w-4 h-4 text-slate-500" />
+                  <span>{totalSpent}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="ml-3 flex flex-col items-end space-y-2" onClick={(event) => event.stopPropagation()}>
+          <span
+            className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+              client.status === ClientStatus.Active
+                ? 'bg-violet-500/20 text-violet-400'
+                : 'bg-slate-600 text-slate-300'
+            }`}
           >
-            <Icon name="dots" className="w-5 h-5" />
-          </button>
-          {menuOpen && (
-            <div className="absolute right-0 mt-2 w-40 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-10">
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  onEdit(client);
-                }}
-                className="w-full flex items-center px-4 py-2 text-sm text-slate-200 hover:bg-slate-600 rounded-t-lg"
-              >
-                <Icon name="edit" className="w-4 h-4 mr-2" />
-                Editar
-              </button>
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  onDelete(client);
-                }}
-                className="w-full flex items-center px-4 py-2 text-sm text-red-400 hover:bg-slate-600 rounded-b-lg"
-              >
-                <Icon name="x" className="w-4 h-4 mr-2" />
-                Excluir
-              </button>
+            {client.status}
+          </span>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={handleMenuToggle}
+              className="p-1 text-slate-400 hover:text-white transition"
+              aria-haspopup="true"
+              aria-expanded={menuOpen}
+              aria-label="Abrir menu de ações"
+            >
+              <Icon name="dots" className="w-5 h-5" />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-10">
+                <button
+                  type="button"
+                  onClick={handleEdit}
+                  className="w-full flex items-center px-4 py-2 text-sm text-slate-200 hover:bg-slate-700 rounded-t-lg"
+                >
+                  <Icon name="edit" className="w-4 h-4 mr-2" />
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="w-full flex items-center px-4 py-2 text-sm text-red-400 hover:bg-slate-700 rounded-b-lg"
+                >
+                  <Icon name="x" className="w-4 h-4 mr-2" />
+                  Excluir
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="mt-4 border-t border-slate-800 pt-4 space-y-4">
+          <div className="grid grid-cols-1 gap-3 text-sm text-slate-300">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Email</p>
+              <p className="font-medium text-slate-100">{client.email}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Avaliação completa</p>
+              <div className="mt-2 flex items-center space-x-1 text-yellow-400">
+                {[...Array(5)].map((_, index) => (
+                  <Icon
+                    key={index}
+                    name="star"
+                    className={`w-5 h-5 ${index < Math.round(client.rating) ? 'fill-current' : ''}`}
+                  />
+                ))}
+                <span className="text-slate-400 text-sm ml-1">({client.rating.toFixed(1)})</span>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Última visita</p>
+              <p className="font-medium text-slate-200">{client.lastVisit || 'Nunca'}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Visitas</p>
+                <p className="font-semibold text-slate-100">{client.visits}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Gasto total</p>
+                <p className="font-semibold text-slate-100">{totalSpent}</p>
+              </div>
+            </div>
+          </div>
+          {client.notes && (
+            <div className="border border-slate-800 rounded-lg bg-slate-900/60 px-3 py-3 text-sm text-slate-300">
+              <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Notas</p>
+              <p className="italic">"{client.notes}"</p>
             </div>
           )}
         </div>
-      </div>
-
-      {/* Informações do Cliente */}
-      <div className="flex space-x-4">
-        <div className="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center font-bold text-violet-300 text-xl">
-          {client.avatarInitials}
-        </div>
-        <div>
-          <p className="font-bold text-slate-100">{client.name}</p>
-          <p className="text-sm text-slate-400">{client.phone}</p>
-          <p className="text-sm text-slate-400">{client.email}</p>
-        </div>
-      </div>
-
-      {/* Última Visita */}
-      <div className="text-sm text-slate-400 mt-4 flex items-center">
-        <Icon name="calendar" className="w-4 h-4 mr-2" />
-        Última visita: {client.lastVisit || 'Nunca'}
-      </div>
-
-      {/* Avaliação */}
-      <div className="flex items-center space-x-1 text-yellow-400 mt-2">
-        {[...Array(5)].map((_, i) => (
-          <Icon
-            key={i}
-            name="star"
-            className={`w-5 h-5 ${i < Math.round(client.rating) ? 'fill-current' : ''}`}
-          />
-        ))}
-        <span className="text-slate-400 text-sm ml-1">({client.rating.toFixed(1)})</span>
-      </div>
-
-      {/* Estatísticas */}
-      <div className="mt-4 pt-4 border-t border-slate-700 grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <p className="text-slate-400">Visitas</p>
-          <p className="font-semibold text-slate-200">{client.visits}</p>
-        </div>
-        <div>
-          <p className="text-slate-400">Gasto Total</p>
-          <p className="font-semibold text-slate-200">R$ {client.spent.toFixed(2)}</p>
-        </div>
-      </div>
-
-      {/* Notas */}
-      {client.notes && (
-        <p className="text-xs text-slate-500 italic mt-4 pt-4 border-t border-slate-700">
-          "{client.notes}"
-        </p>
       )}
     </Card>
   );
@@ -192,6 +329,23 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClose }) => {
   const [notes, setNotes] = useState(initialData?.notes || '');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (initialData) {
+      setName(initialData.name || '');
+      setPhone(initialData.phone || '');
+      setEmail(initialData.email || '');
+      setRating(initialData.rating || 0);
+      setNotes(initialData.notes || '');
+      return;
+    }
+
+    setName('');
+    setPhone('');
+    setEmail('');
+    setRating(0);
+    setNotes('');
+  }, [initialData]);
+
   const handleSubmit = async () => {
     if (!name.trim() || !phone.trim() || !email.trim()) {
       showError('Preencha todos os campos obrigatórios');
@@ -203,13 +357,22 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClose }) => {
       return;
     }
 
+    const formattedPhone = formatPhone(phone);
+    const digitsOnly = formattedPhone.replace(/\D/g, '');
+    if (digitsOnly.length < 10 || digitsOnly.length > 11) {
+      showError('Informe um telefone válido no formato (11) 99999-9999');
+      return;
+    }
+
+    setPhone(formattedPhone);
+
     setLoading(true);
     try {
       if (initialData) {
         // Atualizar
         const updateData: UpdateClientData = {
           name: name.trim(),
-          phone: phone.trim(),
+          phone: formattedPhone,
           email: email.trim(),
           rating,
           notes: notes.trim()
@@ -220,7 +383,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClose }) => {
         // Criar
         const createData: CreateClientData = {
           name: name.trim(),
-          phone: phone.trim(),
+          phone: formattedPhone,
           email: email.trim(),
           rating,
           notes: notes.trim()
@@ -387,12 +550,12 @@ export const ClientsPage: React.FC = () => {
   // Handlers
   const handleNewClient = () => {
     setSelectedClient(null);
-    openModal('clientForm');
+    openModal('newClient');
   };
 
   const handleEditClient = (client: Client) => {
     setSelectedClient(client);
-    openModal('clientForm');
+    openModal('editClient');
   };
 
   const handleDeleteClick = (client: Client) => {
@@ -411,6 +574,21 @@ export const ClientsPage: React.FC = () => {
     } catch (err) {
       showError('Erro ao excluir cliente');
     }
+  };
+
+  const handleCloseNewClientModal = () => {
+    closeModal('newClient');
+    setSelectedClient(null);
+  };
+
+  const handleCloseEditClientModal = () => {
+    closeModal('editClient');
+    setSelectedClient(null);
+  };
+
+  const handleCloseDeleteModal = () => {
+    closeModal('confirmDelete');
+    setSelectedClient(null);
   };
 
   return (
@@ -534,26 +712,39 @@ export const ClientsPage: React.FC = () => {
 
       {/* Modals */}
       <Modal
-        isOpen={isModalOpen('clientForm')}
-        onClose={() => closeModal('clientForm')}
-        title={selectedClient ? 'Editar Cliente' : 'Novo Cliente'}
+        isOpen={isModalOpen('newClient')}
+        onClose={handleCloseNewClientModal}
+        title="Novo Cliente"
       >
         <ClientForm
-          initialData={selectedClient}
-          onClose={() => closeModal('clientForm')}
+          initialData={null}
+          onClose={handleCloseNewClientModal}
         />
       </Modal>
 
       <Modal
+        isOpen={isModalOpen('editClient')}
+        onClose={handleCloseEditClientModal}
+        title="Editar Cliente"
+      >
+        {selectedClient && (
+          <ClientForm
+            initialData={selectedClient}
+            onClose={handleCloseEditClientModal}
+          />
+        )}
+      </Modal>
+
+      <Modal
         isOpen={isModalOpen('confirmDelete')}
-        onClose={() => closeModal('confirmDelete')}
+        onClose={handleCloseDeleteModal}
         title="Confirmar Exclusão"
       >
         {selectedClient && (
           <ConfirmDeleteModal
             client={selectedClient}
             onConfirm={handleConfirmDelete}
-            onCancel={() => closeModal('confirmDelete')}
+            onCancel={handleCloseDeleteModal}
           />
         )}
       </Modal>

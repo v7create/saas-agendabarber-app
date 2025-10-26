@@ -320,24 +320,44 @@ export const useAppointmentsStore = create<AppointmentsState>((set, get) => ({
           // Import dinâmico do financial store para evitar circular dependency
           const { useFinancialStore } = await import('./financial.store');
           const financialStore = useFinancialStore.getState();
-          
-          // Formatar data e hora para transação
-          const today = new Date();
-          const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
-          const timeStr = today.toTimeString().substring(0, 5); // HH:MM
-          
-          // Criar transação de receita
-          await financialStore.createTransaction({
-            type: TransactionType.Income,
-            description: `${appointment.clientName} - Agendamento Concluído`,
-            category: appointment.services.join(' + '),
-            amount: appointment.price,
-            date: dateStr,
-            time: timeStr,
-            paymentMethod: 'Não especificado' // Será informado manualmente se necessário
-          });
-          
-          console.log(`✅ Auto-transação criada: R$ ${appointment.price} para ${appointment.clientName}`);
+
+          // Usa data/hora do próprio agendamento quando possível
+          const dateStr = appointment.date;
+          const timeStr = appointment.startTime;
+          const category = appointment.services.length > 0 ? appointment.services.join(' + ') : 'Serviços';
+
+          // Tenta inferir método de pagamento a partir da store da barbearia
+          let paymentMethod = 'Não informado';
+          try {
+            const { useBarbershopStore } = await import('./barbershop.store');
+            const barbershopState = useBarbershopStore.getState();
+            const defaultPaymentMethod = barbershopState.shopInfo?.defaultPaymentMethod;
+            const primaryMethod = barbershopState.paymentMethods?.[0];
+            paymentMethod = defaultPaymentMethod || primaryMethod || paymentMethod;
+          } catch (barbershopError) {
+            console.warn('Aviso: não foi possível inferir método de pagamento padrão', barbershopError);
+          }
+
+          // Evita duplicar transações do mesmo agendamento
+          const existing = financialStore.transactions.find(
+            (transaction) =>
+              transaction.referenceId === appointment.id &&
+              transaction.referenceType === 'appointment'
+          );
+
+          if (!existing) {
+            await financialStore.createTransaction({
+              type: TransactionType.Income,
+              description: `${appointment.clientName} - ${category}`,
+              category,
+              amount: appointment.price,
+              date: dateStr,
+              time: timeStr,
+              paymentMethod,
+              referenceId: appointment.id,
+              referenceType: 'appointment'
+            });
+          }
         } catch (err) {
           // Log do erro mas não falha a operação principal
           console.warn('Aviso: Erro ao criar auto-transação:', err);

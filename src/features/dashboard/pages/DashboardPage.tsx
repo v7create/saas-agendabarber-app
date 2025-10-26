@@ -35,16 +35,15 @@ import { Modal } from '@/components/Modal';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useClients } from '@/hooks/useClients';
 import { useFinancial } from '@/hooks/useFinancial';
-import { useServices } from '@/hooks/useServices';
 import { useUI } from '@/hooks/useUI';
-import { CreateClientData } from '@/store/clients.store';
-import { CreateTransactionData } from '@/store/financial.store';
 import { 
   Appointment, 
   AppointmentStatus,
-  TransactionType,
-  Service 
+  ClientStatus,
+  TransactionType
 } from '@/types';
+import { CreateAppointmentForm } from '@/features/appointments/components/CreateAppointmentForm';
+import { formatPhone } from '@/lib/validations';
 
 // ===== Sub-Components =====
 
@@ -116,6 +115,10 @@ const UpcomingAppointmentItem: React.FC<UpcomingAppointmentItemProps> = ({
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const priceLabel = appointment.price
+    ? `R$ ${appointment.price.toFixed(2)}`
+    : '--';
+
   const statusColor =
     appointment.status === AppointmentStatus.Confirmed
       ? 'bg-violet-500/20 text-violet-400'
@@ -158,7 +161,7 @@ const UpcomingAppointmentItem: React.FC<UpcomingAppointmentItemProps> = ({
                 }}
                 className="w-full flex items-center px-4 py-2 text-sm text-slate-200 hover:bg-slate-600 rounded-t-lg"
               >
-                <Icon name="edit" className="w-4 h-4 mr-2" />
+                <Icon name="pencil" className="w-4 h-4 mr-2" />
                 Editar
               </button>
               <button
@@ -190,7 +193,7 @@ const UpcomingAppointmentItem: React.FC<UpcomingAppointmentItemProps> = ({
           <Icon name="calendar" className="w-4 h-4 mr-1" />
           {dateFormatted} • {appointment.startTime}
         </span>
-        <span className="font-bold text-slate-100">R$ {appointment.price.toFixed(2)}</span>
+        <span className="font-bold text-slate-100">{priceLabel}</span>
       </div>
     </div>
   );
@@ -232,178 +235,6 @@ const ConfirmationModalContent: React.FC<ConfirmationModalContentProps> = ({
 );
 
 /**
- * NewAppointmentForm - Formulário inline para criar agendamento
- */
-interface NewAppointmentFormProps {
-  onClose: () => void;
-}
-
-const NewAppointmentForm: React.FC<NewAppointmentFormProps> = ({ onClose }) => {
-  const { createAppointment } = useAppointments();
-  const { clients } = useClients({ autoFetch: true });
-  const { services } = useServices({ autoFetch: true });
-  const { success, error: showError } = useUI();
-
-  const [clientName, setClientName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
-  const [date, setDate] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [duration, setDuration] = useState(60);
-  const [notes, setNotes] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const totalPrice = selectedServices.reduce((sum, serviceName) => {
-    const service = services.find(s => s.name === serviceName);
-    return sum + (service?.price || 0);
-  }, 0);
-
-  const handleSubmit = async () => {
-    if (!clientName.trim() || !phone.trim() || selectedServices.length === 0 || !date || !startTime) {
-      showError('Preencha todos os campos obrigatórios');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await createAppointment({
-        clientName: clientName.trim(),
-        clientPhone: phone.trim(),
-        date,
-        startTime,
-        status: AppointmentStatus.Pending,
-        // Campos opcionais (não validados pelas regras, mas salvos)
-        duration,
-        price: totalPrice,
-        services: selectedServices,
-        notes: notes.trim()
-      });
-      success('Agendamento criado com sucesso!');
-      onClose();
-    } catch (err) {
-      showError('Erro ao criar agendamento');
-      console.error('Erro detalhado:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const toggleService = (serviceName: string) => {
-    setSelectedServices(prev =>
-      prev.includes(serviceName)
-        ? prev.filter(s => s !== serviceName)
-        : [...prev, serviceName]
-    );
-  };
-
-  return (
-    <div className="space-y-4 max-h-[70vh] overflow-y-auto">
-      <div>
-        <label className="text-sm font-medium text-slate-400">Cliente *</label>
-        <input
-          type="text"
-          value={clientName}
-          onChange={(e) => setClientName(e.target.value)}
-          placeholder="Nome do cliente"
-          className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium text-slate-400">Telefone *</label>
-        <input
-          type="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="(00) 00000-0000"
-          className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium text-slate-400 mb-2 block">
-          Serviços * (R$ {totalPrice.toFixed(2)})
-        </label>
-        <div className="space-y-2 max-h-32 overflow-y-auto border border-slate-600 rounded-lg p-3 bg-slate-700/30">
-          {services.length === 0 ? (
-            <p className="text-slate-400 text-sm">Nenhum serviço disponível</p>
-          ) : (
-            services.map(service => (
-              <label key={service.id} className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedServices.includes(service.name)}
-                  onChange={() => toggleService(service.name)}
-                  className="w-4 h-4 text-violet-600 bg-slate-700 border-slate-600 rounded focus:ring-2 focus:ring-violet-500"
-                />
-                <span className="text-slate-200 text-sm">
-                  {service.name} - R$ {service.price.toFixed(2)}
-                </span>
-              </label>
-            ))
-          )}
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-sm font-medium text-slate-400">Data *</label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium text-slate-400">Horário *</label>
-          <input
-            type="time"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
-          />
-        </div>
-      </div>
-      <div>
-        <label className="text-sm font-medium text-slate-400">Duração (minutos)</label>
-        <input
-          type="number"
-          value={duration}
-          onChange={(e) => setDuration(parseInt(e.target.value))}
-          min="15"
-          step="15"
-          className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium text-slate-400">Notas</label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Observações sobre o agendamento..."
-          className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
-          rows={2}
-        />
-      </div>
-      <div className="flex space-x-3 pt-4">
-        <button
-          onClick={onClose}
-          disabled={loading}
-          className="flex-1 bg-slate-700 text-slate-200 font-bold py-2 rounded-lg hover:bg-slate-600 disabled:bg-slate-800"
-        >
-          Cancelar
-        </button>
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="flex-1 bg-violet-600 text-white font-bold py-2 rounded-lg hover:bg-violet-700 disabled:bg-slate-500"
-        >
-          {loading ? 'Salvando...' : 'Agendar'}
-        </button>
-      </div>
-    </div>
-  );
-};
-
-/**
  * NewClientForm - Formulário inline para criar cliente
  */
 interface NewClientFormProps {
@@ -412,7 +243,7 @@ interface NewClientFormProps {
 
 const NewClientForm: React.FC<NewClientFormProps> = ({ onClose }) => {
   const { createClient } = useClients();
-  const { success, error: showError } = useUI();
+  const { success, error: showError, closeModal } = useUI();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -424,16 +255,27 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onClose }) => {
       return;
     }
 
+    const formattedPhone = formatPhone(phone);
+    const digitsOnly = formattedPhone.replace(/\D/g, '');
+    if (digitsOnly.length < 10 || digitsOnly.length > 11) {
+      showError('Informe um telefone válido no formato (11) 99999-9999');
+      return;
+    }
+
     setLoading(true);
     try {
       await createClient({
         name: name.trim(),
-        phone: phone.trim(),
+        phone: formattedPhone,
         email: email.trim(),
         rating: 0,
         notes: ''
       });
       success('Cliente cadastrado com sucesso!');
+      setName('');
+      setPhone('');
+      setEmail('');
+      closeModal('newClient');
       onClose();
     } catch (err) {
       showError('Erro ao cadastrar cliente');
@@ -522,7 +364,6 @@ const NewPaymentForm: React.FC<NewPaymentFormProps> = ({ onClose }) => {
       const now = new Date();
       const date = now.toISOString().split('T')[0];
       const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
       await createTransaction({
         type,
         description: description.trim(),
@@ -532,6 +373,7 @@ const NewPaymentForm: React.FC<NewPaymentFormProps> = ({ onClose }) => {
         time,
         paymentMethod
       });
+
       success('Transação registrada com sucesso!');
       onClose();
     } catch (err) {
@@ -554,6 +396,7 @@ const NewPaymentForm: React.FC<NewPaymentFormProps> = ({ onClose }) => {
           <option value={TransactionType.Expense}>Despesa</option>
         </select>
       </div>
+
       <div>
         <label className="text-sm font-medium text-slate-400">Descrição *</label>
         <input
@@ -564,6 +407,7 @@ const NewPaymentForm: React.FC<NewPaymentFormProps> = ({ onClose }) => {
           className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
         />
       </div>
+
       <div>
         <label className="text-sm font-medium text-slate-400">Valor (R$) *</label>
         <input
@@ -575,6 +419,7 @@ const NewPaymentForm: React.FC<NewPaymentFormProps> = ({ onClose }) => {
           className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
         />
       </div>
+
       <div>
         <label className="text-sm font-medium text-slate-400">Categoria *</label>
         <input
@@ -585,6 +430,7 @@ const NewPaymentForm: React.FC<NewPaymentFormProps> = ({ onClose }) => {
           className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
         />
       </div>
+
       <div>
         <label className="text-sm font-medium text-slate-400">Método de Pagamento *</label>
         <select
@@ -597,6 +443,7 @@ const NewPaymentForm: React.FC<NewPaymentFormProps> = ({ onClose }) => {
           <option value="Pix">Pix</option>
         </select>
       </div>
+
       <div className="flex space-x-3 pt-4">
         <button
           onClick={onClose}
@@ -624,29 +471,21 @@ export const DashboardPage: React.FC = () => {
   
   // Hooks
   const { 
-    appointments, 
     loading: appointmentsLoading,
-    getTodayAppointments,
-    getFutureAppointments,
-    getStats: getAppointmentStats,
+    appointments,
     updateStatus,
-    deleteAppointment
+    fetchUpcoming
   } = useAppointments({ autoFetch: 'upcoming' });
-  
-  const { 
-    clients,
-    getStats: getClientStats
-  } = useClients({ autoFetch: true });
-  
-  const { 
-    getTodayTransactions,
-    getMonthlyStats
-  } = useFinancial({ autoFetch: 'current-month' });
+
+  const { clients } = useClients({ autoFetch: true });
+
+  const { transactions } = useFinancial({ autoFetch: 'current-month' });
   
   const { openModal, closeModal, isModalOpen, success, error: showError } = useUI();
   
   // Estado local
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
 
   // Data formatada
   const today = new Date();
@@ -659,30 +498,98 @@ export const DashboardPage: React.FC = () => {
 
   // Estatísticas - Otimizado com useMemo
   const { todayAppointments, futureAppointments, appointmentStats, nextAppointment, todayRevenue, todayTransactionsCount } = useMemo(() => {
-    const today = getTodayAppointments();
-    const future = getFutureAppointments().slice(0, 5);
-    const stats = getAppointmentStats();
-    const transactions = getTodayTransactions()
-      .filter(t => t.type === TransactionType.Income);
-    const revenue = transactions.reduce((sum, t) => sum + t.amount, 0);
-    const next = future[0] || null;
+    const now = Date.now();
+    const todayIso = new Date().toISOString().split('T')[0];
+
+    const toTimestamp = (dateStr: string, timeStr: string) =>
+      new Date(`${dateStr}T${timeStr}`).getTime();
+
+    const isActiveStatus = (status: AppointmentStatus) =>
+      status !== AppointmentStatus.Cancelled && status !== AppointmentStatus.Completed;
+
+    const todayList = appointments
+      .filter(app => app.date === todayIso && app.status !== AppointmentStatus.Cancelled)
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+    const sortedUpcoming = appointments
+      .filter(app => isActiveStatus(app.status))
+      .sort((a, b) => {
+        if (a.date === b.date) {
+          return a.startTime.localeCompare(b.startTime);
+        }
+        return a.date.localeCompare(b.date);
+      });
+
+    const upcomingFromNow = sortedUpcoming.filter(app => toTimestamp(app.date, app.startTime) >= now);
+
+    const next = upcomingFromNow[0] ?? sortedUpcoming[0] ?? null;
+    const future = (upcomingFromNow.length > 0 ? upcomingFromNow : sortedUpcoming).slice(0, 5);
+
+    const appointmentStats = appointments.reduce(
+      (acc, app) => {
+        acc.total += 1;
+        if (app.date === todayIso) {
+          acc.today += 1;
+        }
+        switch (app.status) {
+          case AppointmentStatus.Confirmed:
+            acc.confirmed += 1;
+            break;
+          case AppointmentStatus.Pending:
+            acc.pending += 1;
+            break;
+          case AppointmentStatus.Completed:
+            acc.completed += 1;
+            acc.totalRevenue += app.price ?? 0;
+            break;
+          case AppointmentStatus.Cancelled:
+            acc.cancelled += 1;
+            break;
+        }
+        return acc;
+      },
+      {
+        total: 0,
+        today: 0,
+        confirmed: 0,
+        pending: 0,
+        completed: 0,
+        cancelled: 0,
+        totalRevenue: 0
+      }
+    );
+
+    const todayIncomeTransactions = transactions.filter(
+      t => t.date === todayIso && t.type === TransactionType.Income
+    );
+    const todayRevenue = todayIncomeTransactions.reduce((sum, t) => sum + t.amount, 0);
 
     return {
-      todayAppointments: today,
+      todayAppointments: todayList,
       futureAppointments: future,
-      appointmentStats: stats,
+      appointmentStats,
       nextAppointment: next,
-      todayRevenue: revenue,
-      todayTransactionsCount: transactions.length
+      todayRevenue,
+      todayTransactionsCount: todayIncomeTransactions.length
     };
-  }, [getTodayAppointments, getFutureAppointments, getAppointmentStats, getTodayTransactions]);
+  }, [appointments, transactions]);
 
-  const clientStats = useMemo(() => getClientStats(), [getClientStats]);
+  const clientStats = useMemo(() => {
+    const total = clients.length;
+    const active = clients.filter(client => client.status === ClientStatus.Active).length;
+    const inactive = total - active;
+
+    return {
+      total,
+      active,
+      inactive
+    };
+  }, [clients]);
 
   // Handlers
   const handleEditClick = (appointment: Appointment) => {
-    setSelectedAppointment(appointment);
-    openModal('editAppointment', appointment);
+    setEditingAppointment(appointment);
+    openModal('editAppointment');
   };
 
   const handleRemoveClick = (appointment: Appointment) => {
@@ -700,6 +607,7 @@ export const DashboardPage: React.FC = () => {
     
     try {
       await updateStatus(selectedAppointment.id, AppointmentStatus.Cancelled);
+      await fetchUpcoming();
       success('Agendamento cancelado com sucesso!');
       closeModal('confirmRemove');
       setSelectedAppointment(null);
@@ -713,12 +621,18 @@ export const DashboardPage: React.FC = () => {
     
     try {
       await updateStatus(selectedAppointment.id, AppointmentStatus.Completed);
+      await fetchUpcoming();
       success('Agendamento concluído com sucesso!');
       closeModal('confirmComplete');
       setSelectedAppointment(null);
     } catch (err) {
       showError('Erro ao concluir agendamento');
     }
+  };
+
+  const handleCreateAppointmentClick = () => {
+    setSelectedAppointment(null);
+    openModal('newAppointment');
   };
 
   return (
@@ -732,10 +646,7 @@ export const DashboardPage: React.FC = () => {
 
         {/* Novo Agendamento Button */}
         <button
-          onClick={() => {
-            setSelectedAppointment(null);
-            openModal('newAppointment');
-          }}
+          onClick={handleCreateAppointmentClick}
           className="w-full bg-violet-600 text-white font-bold py-3 rounded-lg flex items-center justify-center space-x-2 shadow-lg shadow-violet-600/20 hover:bg-violet-700 transition-colors"
         >
           <Icon name="plus" className="w-5 h-5" />
@@ -783,7 +694,7 @@ export const DashboardPage: React.FC = () => {
             <QuickActionButton
               icon="calendar"
               label="Novo Agendamento"
-              onClick={() => openModal('newAppointment')}
+              onClick={handleCreateAppointmentClick}
             />
             <QuickActionButton
               icon="users"
@@ -880,7 +791,45 @@ export const DashboardPage: React.FC = () => {
         onClose={() => closeModal('newAppointment')}
         title="Novo Agendamento"
       >
-        <NewAppointmentForm onClose={() => closeModal('newAppointment')} />
+        <CreateAppointmentForm
+          onClose={() => closeModal('newAppointment')}
+          onSuccess={() => setSelectedAppointment(null)}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={isModalOpen('editAppointment')}
+        onClose={() => {
+          closeModal('editAppointment');
+          setEditingAppointment(null);
+        }}
+        title="Editar Agendamento"
+      >
+        {editingAppointment && (
+          <CreateAppointmentForm
+            mode="edit"
+            appointmentId={editingAppointment.id}
+            defaultValues={{
+              clientName: editingAppointment.clientName,
+              clientPhone: editingAppointment.clientPhone,
+              date: editingAppointment.date,
+              startTime: editingAppointment.startTime,
+              services: editingAppointment.services,
+              notes: editingAppointment.notes,
+              duration: editingAppointment.duration,
+              price: editingAppointment.price,
+              status: editingAppointment.status,
+            }}
+            onClose={() => {
+              closeModal('editAppointment');
+              setEditingAppointment(null);
+            }}
+            onSuccess={() => {
+              setEditingAppointment(null);
+              closeModal('editAppointment');
+            }}
+          />
+        )}
       </Modal>
 
       <Modal

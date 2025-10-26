@@ -53,6 +53,8 @@ export interface Transaction {
     date: string;
     time: string;
     paymentMethod: string;
+    referenceId?: string;
+    referenceType?: string;
 }
 
 export interface Service {

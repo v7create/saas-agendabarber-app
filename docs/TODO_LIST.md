@@ -1,4 +1,21 @@
-# 📋 TODO List - AgendaBarber
+# 📋 Backlog Imediato – AgendaBarber (atualizado em 25/10/2025)
+
+## 🔥 Prioridade Alta (liberação beta)
+- [ ] Exercitar fluxo completo em produção (login → cliente → agendamento → conclusão) num dispositivo mobile real e registrar problemas de UX.
+- [ ] Ajustar Dashboard e Agenda para usar o mesmo padrão de cartão compacto com estados reativos e modais conectados.
+- [ ] Reativar o teste Playwright de criação de agendamento e cobrir o novo comportamento do `ClientCard`.
+
+## 🛠️ Prioridade Média (estabilização)
+- [ ] Automatizar criação de transação financeira ao concluir um agendamento.
+- [ ] Preencher HistoryPage com dados reais (substituir mocks) e revisar métricas exibidas.
+- [ ] Configurar Google Analytics 4 / Firebase Analytics para monitoramento pós-lançamento.
+
+## 📦 Preparação de Release
+- [x] `.env.production` criado e validado.
+- [x] `npm run build` / deploy Firebase executados.
+- [ ] Registrar insights de uso após 48h e revisar backlog.
+
+> Atualize este arquivo ao concluir cada item para manter o roadmap alinhado com a etapa beta em produção.# 📋 TODO List - AgendaBarber
 
 **Última Atualização:** 17/10/2025 - 00:00  
 **Status Geral:** 🟢 Fases 1-2 Concluídas - Pronto para Fase 3

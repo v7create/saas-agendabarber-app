@@ -118,16 +118,70 @@ export const HistoryPage: React.FC = () => {
     return appointments.filter(a => a.status === AppointmentStatus.Completed);
   }, [appointments]);
 
+  const periodFilteredAppointments = useMemo(() => {
+    const sorted = [...completedAppointments].sort((a, b) => {
+      if (a.date === b.date) {
+        return b.startTime.localeCompare(a.startTime);
+      }
+      return b.date.localeCompare(a.date);
+    });
+
+    if (periodFilter === 'all') {
+      return sorted;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const getIso = (date: Date) => date.toISOString().split('T')[0];
+
+    let startDate: Date;
+    let endDate: Date;
+
+    switch (periodFilter) {
+      case '7days': {
+        startDate = new Date(today);
+        startDate.setDate(startDate.getDate() - 6);
+        endDate = new Date(today);
+        break;
+      }
+      case '30days': {
+        startDate = new Date(today);
+        startDate.setDate(startDate.getDate() - 29);
+        endDate = new Date(today);
+        break;
+      }
+      case 'thisMonth': {
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        break;
+      }
+      case 'lastMonth': {
+        startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+        break;
+      }
+      default: {
+        return sorted;
+      }
+    }
+
+    const startIso = getIso(startDate);
+    const endIso = getIso(endDate);
+
+    return sorted.filter(app => app.date >= startIso && app.date <= endIso);
+  }, [completedAppointments, periodFilter]);
+
   // Filtrar por busca
   const filteredAppointments = useMemo(() => {
-    if (!searchQuery) return completedAppointments;
+    if (!searchQuery) return periodFilteredAppointments;
     const query = searchQuery.toLowerCase();
-    return completedAppointments.filter(
+    return periodFilteredAppointments.filter(
       a =>
         a.clientName.toLowerCase().includes(query) ||
         a.services.some(s => s.toLowerCase().includes(query))
     );
-  }, [completedAppointments, searchQuery]);
+  }, [periodFilteredAppointments, searchQuery]);
 
   // Calcular stats
   const stats = useMemo(() => {

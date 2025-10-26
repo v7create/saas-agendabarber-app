@@ -212,7 +212,7 @@ export const AppSettingsPage: React.FC = () => {
         {/* App Info */}
         <div className="text-center py-4">
           <p className="text-slate-500 text-xs">AgendaBarber v1.0.0</p>
-          <p className="text-slate-600 text-xs mt-1">Desenvolvido com ❤️ para barbeiros</p>
+          <p className="text-slate-600 text-xs mt-1">Desenvolvido por WebMind AI.</p>
         </div>
       </div>
 

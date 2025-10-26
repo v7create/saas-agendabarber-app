@@ -11,14 +11,14 @@ const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
 
 export const MOCK_APPOINTMENTS: Appointment[] = [
-  { id: 'a1', clientName: 'João Silva', services: ['Corte', 'Barba'], startTime: '14:30', duration: 60, status: AppointmentStatus.Confirmed, phone: '5511999999999', price: 65, notes: 'Cliente prefere corte mais baixo nas laterais', date: formatDate(today), barberName: 'André' },
-  { id: 'a2', clientName: 'Pedro Santos', services: ['Corte Simples'], startTime: '16:00', duration: 30, status: AppointmentStatus.Confirmed, phone: '5511888888888', price: 35, date: formatDate(today), barberName: 'Bruno' },
-  { id: 'a3', clientName: 'Carlos Lima', services: ['Barba Completa'], startTime: '17:00', duration: 45, status: AppointmentStatus.Pending, phone: '5511777777777', price: 30, notes: 'Primeira vez no salão', date: formatDate(today), barberName: 'André' },
-  { id: 'a4', clientName: 'Roberto Costa', services: ['Corte', 'Barba', 'Sobrancelha'], startTime: '09:00', duration: 90, status: AppointmentStatus.Confirmed, phone: '5511666666666', price: 85, date: formatDate(tomorrow), barberName: 'Carlos' },
-  { id: 'a5', clientName: 'Fernando Alves', services: ['Corte Simples'], startTime: '10:30', duration: 30, status: AppointmentStatus.Confirmed, phone: '5511555555555', price: 35, date: formatDate(tomorrow), barberName: 'Bruno' },
-  { id: 'a6', clientName: 'Lucas Oliveira', services: ['Degradê + Barba'], startTime: '11:00', duration: 70, status: AppointmentStatus.Confirmed, phone: '5511444444444', price: 70, date: formatDate(tomorrow), barberName: 'André' },
-  { id: 'a7', clientName: 'Mateus Pereira', services: ['Platinado'], startTime: '14:00', duration: 120, status: AppointmentStatus.Pending, phone: '5511333333333', price: 150, date: formatDate(dayAfter), barberName: 'Carlos' },
-  { id: 'a8', clientName: 'Guilherme Souza', services: ['Luzes'], startTime: '16:30', duration: 90, status: AppointmentStatus.Confirmed, phone: '5511222222222', price: 120, date: formatDate(dayAfter), barberName: 'Bruno' },
+    { id: 'a1', clientName: 'João Silva', clientPhone: '5511999999999', services: ['Corte', 'Barba'], startTime: '14:30', duration: 60, status: AppointmentStatus.Confirmed, price: 65, notes: 'Cliente prefere corte mais baixo nas laterais', date: formatDate(today), barberName: 'André' },
+    { id: 'a2', clientName: 'Pedro Santos', clientPhone: '5511888888888', services: ['Corte Simples'], startTime: '16:00', duration: 30, status: AppointmentStatus.Confirmed, price: 35, date: formatDate(today), barberName: 'Bruno' },
+    { id: 'a3', clientName: 'Carlos Lima', clientPhone: '5511777777777', services: ['Barba Completa'], startTime: '17:00', duration: 45, status: AppointmentStatus.Pending, price: 30, notes: 'Primeira vez no salão', date: formatDate(today), barberName: 'André' },
+    { id: 'a4', clientName: 'Roberto Costa', clientPhone: '5511666666666', services: ['Corte', 'Barba', 'Sobrancelha'], startTime: '09:00', duration: 90, status: AppointmentStatus.Confirmed, price: 85, date: formatDate(tomorrow), barberName: 'Carlos' },
+    { id: 'a5', clientName: 'Fernando Alves', clientPhone: '5511555555555', services: ['Corte Simples'], startTime: '10:30', duration: 30, status: AppointmentStatus.Confirmed, price: 35, date: formatDate(tomorrow), barberName: 'Bruno' },
+    { id: 'a6', clientName: 'Lucas Oliveira', clientPhone: '5511444444444', services: ['Degradê + Barba'], startTime: '11:00', duration: 70, status: AppointmentStatus.Confirmed, price: 70, date: formatDate(tomorrow), barberName: 'André' },
+    { id: 'a7', clientName: 'Mateus Pereira', clientPhone: '5511333333333', services: ['Platinado'], startTime: '14:00', duration: 120, status: AppointmentStatus.Pending, price: 150, date: formatDate(dayAfter), barberName: 'Carlos' },
+    { id: 'a8', clientName: 'Guilherme Souza', clientPhone: '5511222222222', services: ['Luzes'], startTime: '16:30', duration: 90, status: AppointmentStatus.Confirmed, price: 120, date: formatDate(dayAfter), barberName: 'Bruno' },
 ];
 
 export const MOCK_CLIENTS: Client[] = [

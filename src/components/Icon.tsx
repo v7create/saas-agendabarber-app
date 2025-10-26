@@ -8,7 +8,7 @@ import {
   BiCreditCard, BiReceipt, BiTrendingUp, BiMoney, BiFace, BiBrush, BiLayer,
   BiLogoWhatsapp, BiPencil, BiTrash, BiCheckCircle, BiLogoInstagram, BiLogoFacebook,
   BiLogoTiktok, BiMap, BiGlobe, BiPhone, BiPalette, BiKey, BiShieldQuarter,
-  BiHelpCircle, BiGift, BiCog, BiLogoGoogle
+  BiHelpCircle, BiGift, BiCog, BiLogoGoogle, BiArchive, BiDoorOpen, BiWallet
 } from 'react-icons/bi';
 
 interface IconProps {
@@ -45,11 +45,13 @@ const iconMap: { [key: string]: React.ElementType } = {
   receipt: BiReceipt,
   trendUp: BiTrendingUp,
   cash: BiMoney,
+  wallet: BiWallet,
   creditCard: BiCreditCard,
   face: BiFace,
   brush: BiBrush,
   layer: BiLayer,
   whatsapp: BiLogoWhatsapp,
+  door: BiDoorOpen,
   pencil: BiPencil,
   trash: BiTrash,
   checkCircle: BiCheckCircle,
@@ -66,6 +68,7 @@ const iconMap: { [key: string]: React.ElementType } = {
   gift: BiGift,
   settings: BiCog,
   google: BiLogoGoogle,
+  inbox: BiArchive,
 };
 
 export const Icon: React.FC<IconProps> = ({ name, className }) => {

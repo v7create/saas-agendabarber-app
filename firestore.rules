@@ -28,8 +28,9 @@ service cloud.firestore {
     }
 
     function isValidAppointmentStatus(status) {
-      return status == 'Pendente' || status == 'Confirmado' || status == 'Em Atendimento' || 
-             status == 'Concluido' || status == 'Cancelado' || status == 'Nao Compareceu';
+      return status == 'Pendente' || status == 'Confirmado' || status == 'Em Atendimento' ||
+             status == 'Concluido' || status == 'Concluído' || status == 'Cancelado' ||
+             status == 'Nao Compareceu' || status == 'Não Compareceu';
     }
 
     function isValidPaymentMethod(method) {
