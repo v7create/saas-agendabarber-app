@@ -9,6 +9,85 @@ dayAfter.setDate(today.getDate() + 2);
 
 const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
+export const HALF_HOUR_TIME_OPTIONS = (() => {
+    const slots: string[] = [];
+    for (let hour = 8; hour <= 20; hour++) {
+        const hours = hour.toString().padStart(2, '0');
+        slots.push(`${hours}:00`);
+        if (hour < 20) {
+            slots.push(`${hours}:30`);
+        }
+    }
+    return slots;
+})();
+
+export const buildHalfHourOptions = (extraTimes: string[] = []) => {
+    const unique = new Set(HALF_HOUR_TIME_OPTIONS);
+    extraTimes.forEach((time) => {
+        if (time) {
+            unique.add(time);
+        }
+    });
+    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+};
+
+export const isHalfHourSlot = (time: string) => {
+    if (!time) {
+        return false;
+    }
+
+    const [hoursStr, minutesStr] = time.split(':');
+    if (!hoursStr || !minutesStr) {
+        return false;
+    }
+
+    const hours = Number(hoursStr);
+    const minutes = Number(minutesStr);
+
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+        return false;
+    }
+
+    if (hours < 8 || hours > 20) {
+        return false;
+    }
+
+    return minutes === 0 || minutes === 30;
+};
+
+interface GetAvailableHalfHourSlotsOptions {
+    excludeAppointmentId?: string;
+    includeTimes?: string[];
+}
+
+export const getAvailableHalfHourSlots = (
+    appointments: Appointment[],
+    date: string,
+    options: GetAvailableHalfHourSlotsOptions = {}
+) => {
+    const { excludeAppointmentId, includeTimes = [] } = options;
+
+    const allowedTimes = new Set(includeTimes.filter(Boolean));
+
+    const occupiedTimes = new Set(
+        appointments
+            .filter((appointment) =>
+                appointment.date === date &&
+                appointment.status !== AppointmentStatus.Cancelled &&
+                appointment.id !== excludeAppointmentId
+            )
+            .map((appointment) => appointment.startTime)
+    );
+
+    allowedTimes.forEach((time) => {
+        if (time) {
+            occupiedTimes.delete(time);
+        }
+    });
+
+    return HALF_HOUR_TIME_OPTIONS.filter((time) => !occupiedTimes.has(time) || allowedTimes.has(time));
+};
+
 
 export const MOCK_APPOINTMENTS: Appointment[] = [
     { id: 'a1', clientName: 'João Silva', clientPhone: '5511999999999', services: ['Corte', 'Barba'], startTime: '14:30', duration: 60, status: AppointmentStatus.Confirmed, price: 65, notes: 'Cliente prefere corte mais baixo nas laterais', date: formatDate(today), barberName: 'André' },

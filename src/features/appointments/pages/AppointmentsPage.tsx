@@ -29,7 +29,7 @@
  * - Search em tempo real
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useId } from 'react';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { Modal } from '@/components/Modal';
@@ -39,6 +39,7 @@ import { useServices } from '@/hooks/useServices';
 import { useUI } from '@/hooks/useUI';
 import { Appointment, AppointmentStatus } from '@/types';
 import { CreateAppointmentData } from '@/store/appointments.store';
+import { getAvailableHalfHourSlots, isHalfHourSlot } from '@/constants';
 
 // ===== Sub-Components =====
 
@@ -175,7 +176,7 @@ interface NewAppointmentFormProps {
 }
 
 const NewAppointmentForm: React.FC<NewAppointmentFormProps> = ({ onClose, editingAppointment }) => {
-  const { createAppointment, updateAppointment } = useAppointments();
+  const { createAppointment, updateAppointment, appointments } = useAppointments();
   const { clients } = useClients({ autoFetch: true });
   const { services } = useServices({ autoFetch: true });
   const { success, error: showError } = useUI();
@@ -189,6 +190,23 @@ const NewAppointmentForm: React.FC<NewAppointmentFormProps> = ({ onClose, editin
   const [notes, setNotes] = useState(editingAppointment?.notes || '');
   const [loading, setLoading] = useState(false);
 
+  const availableTimes = useMemo(
+    () =>
+      getAvailableHalfHourSlots(appointments, date, {
+        excludeAppointmentId: editingAppointment?.id,
+        includeTimes: editingAppointment?.startTime ? [editingAppointment.startTime] : [],
+      }),
+    [appointments, date, editingAppointment?.id, editingAppointment?.startTime]
+  );
+
+  const timeListId = useId();
+
+  useEffect(() => {
+    if (startTime && !availableTimes.includes(startTime)) {
+      setStartTime('');
+    }
+  }, [availableTimes, startTime]);
+
   // Cálculo automático do preço com base nos serviços selecionados
   const totalPrice = useMemo(() => {
     return selectedServices.reduce((sum, serviceName) => {
@@ -197,9 +215,38 @@ const NewAppointmentForm: React.FC<NewAppointmentFormProps> = ({ onClose, editin
     }, 0);
   }, [selectedServices, services]);
 
+  const handleTimeChange = (value: string) => {
+    if (!value) {
+      setStartTime('');
+      return;
+    }
+
+    if (!isHalfHourSlot(value)) {
+      showError('Escolha horários com intervalos de 30 minutos.');
+      return;
+    }
+
+    if (!availableTimes.includes(value)) {
+      showError('Horário indisponível para esta data.');
+      return;
+    }
+
+    setStartTime(value);
+  };
+
   const handleSubmit = async () => {
     if (!clientName.trim() || !clientPhone.trim() || selectedServices.length === 0 || !date || !startTime) {
       showError('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    if (!isHalfHourSlot(startTime)) {
+      showError('Escolha horários com intervalos de 30 minutos.');
+      return;
+    }
+
+    if (!availableTimes.includes(startTime)) {
+      showError('Esse horário já está ocupado.');
       return;
     }
 
@@ -302,10 +349,22 @@ const NewAppointmentForm: React.FC<NewAppointmentFormProps> = ({ onClose, editin
           <label className="text-sm font-medium text-slate-400">Horário *</label>
           <input
             type="time"
+            min="08:00"
+            max="20:00"
+            step={1800}
+            list={timeListId}
             value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
+            onChange={(e) => handleTimeChange(e.target.value)}
             className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
           />
+          <datalist id={timeListId}>
+            {availableTimes.map((time) => (
+              <option key={time} value={time} />
+            ))}
+          </datalist>
+          {availableTimes.length === 0 && (
+            <p className="mt-1 text-xs text-red-400">Sem horários disponíveis nesta data.</p>
+          )}
         </div>
       </div>
       <div>

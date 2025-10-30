@@ -365,9 +365,15 @@ interface AgendaMacroOverviewProps {
   appointments: Appointment[];
   startDate: string;
   onDayDoubleClick?: (isoDate: string) => void;
+  onTimelineLinkClick?: () => void;
 }
 
-const AgendaMacroOverview: React.FC<AgendaMacroOverviewProps> = ({ appointments, startDate, onDayDoubleClick }) => {
+const AgendaMacroOverview: React.FC<AgendaMacroOverviewProps> = ({
+  appointments,
+  startDate,
+  onDayDoubleClick,
+  onTimelineLinkClick,
+}) => {
   const currencyFormatter = useMemo(
     () => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }),
     []
@@ -450,14 +456,28 @@ const AgendaMacroOverview: React.FC<AgendaMacroOverviewProps> = ({ appointments,
             </div>
           </div>
         </Card>
-        <Card className="!p-4 flex items-center justify-between bg-slate-900/70 border border-slate-800">
-          <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wide">Receita Prevista</p>
-            <p className="text-xl font-bold text-emerald-400">{currencyFormatter.format(totals.totalRevenue)}</p>
-            <p className="text-[11px] text-slate-500 mt-1">Considera agendamentos confirmados</p>
+        <Card className="!p-4 bg-slate-900/70 border border-slate-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-400 uppercase tracking-wide">Receita Prevista</p>
+              <p className="text-xl font-bold text-emerald-400">{currencyFormatter.format(totals.totalRevenue)}</p>
+              <p className="text-[11px] text-slate-500 mt-1">Considera agendamentos confirmados</p>
+            </div>
+            <Icon name="trendUp" className="w-8 h-8 text-emerald-400" />
           </div>
-          <Icon name="trendUp" className="w-8 h-8 text-emerald-400" />
         </Card>
+
+        <p className="col-span-full text-sm text-slate-400 mt-4 mb-1">
+          Dê dois cliques no dia para visualizar mais detalhes dos agendamentos na visualização de
+          {' '}<button
+            onClick={onTimelineLinkClick}
+            className="text-violet-300 font-semibold hover:text-violet-200 transition-colors"
+            type="button"
+          >
+            Timeline
+          </button>
+          .
+        </p>
       </div>
 
       <div className="space-y-3">
@@ -473,11 +493,9 @@ const AgendaMacroOverview: React.FC<AgendaMacroOverviewProps> = ({ appointments,
               key={day.isoDate}
               className={`!p-4 bg-slate-900/80 border ${highlightClass} ${onDayDoubleClick ? 'cursor-zoom-in' : ''}`}
             >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-slate-500 uppercase tracking-wide">{weekday}</p>
-                  <p className="text-sm font-semibold text-slate-200">{formattedDate}</p>
-                </div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-slate-500 uppercase tracking-wide">{weekday}</p>
+                <p className="text-sm font-semibold text-slate-200">{formattedDate}</p>
               </div>
 
               <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
@@ -991,17 +1009,18 @@ export const AgendaPage: React.FC = () => {
         )}
 
         {viewMode === 'calendar' && (
-          <Card className="!p-5 space-y-5">
+          <Card className="!p-5">
             <div>
-              <h3 className="font-bold text-slate-100">Próximos 7 Dias</h3>
-              <p className="text-sm text-slate-400">
-                Agendamentos e Receita Prevista de <span className="font-semibold text-slate-200">{rangeLabels.start}</span> até <span className="font-semibold text-slate-200">{rangeLabels.end}</span>. Mais detalhes em <span className="text-violet-300">Timeline</span>.
+              <h3 className="font-bold text-slate-100 mb-2">Próximos 7 Dias</h3>
+              <p className="text-sm text-slate-400 mb-6">
+                Agendamentos e Receita Prevista de <span className="font-semibold text-slate-200">{rangeLabels.start}</span> até <span className="font-semibold text-slate-200">{rangeLabels.end}</span>.
               </p>
             </div>
             <AgendaMacroOverview
               appointments={appointments}
               startDate={selectedDate}
               onDayDoubleClick={handleDayCardDoubleClick}
+              onTimelineLinkClick={() => setViewMode('timeline')}
             />
           </Card>
         )}

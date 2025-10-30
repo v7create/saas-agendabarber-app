@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useId } from 'react';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useClients } from '@/hooks/useClients';
 import { useServices } from '@/hooks/useServices';
 import { useUI } from '@/hooks/useUI';
 import { AppointmentStatus } from '@/types';
 import { formatPhone } from '@/lib/validations';
+import { getAvailableHalfHourSlots, isHalfHourSlot } from '@/constants';
 
 interface CreateAppointmentFormProps {
   onClose: () => void;
@@ -35,7 +36,7 @@ export const CreateAppointmentForm: React.FC<CreateAppointmentFormProps> = ({
   defaultValues,
   onSuccess,
 }) => {
-  const { createAppointment, updateAppointment } = useAppointments();
+  const { createAppointment, updateAppointment, appointments } = useAppointments();
   const { clients } = useClients({ autoFetch: true });
   const { services } = useServices({ autoFetch: true });
   const { success, error: showError } = useUI();
@@ -55,6 +56,17 @@ export const CreateAppointmentForm: React.FC<CreateAppointmentFormProps> = ({
   const [status, setStatus] = useState<AppointmentStatus>(
     defaultValues?.status || AppointmentStatus.Pending
   );
+
+  const availableTimes = useMemo(
+    () =>
+      getAvailableHalfHourSlots(appointments, date, {
+        excludeAppointmentId: mode === 'edit' ? appointmentId : undefined,
+        includeTimes: defaultValues?.startTime ? [defaultValues.startTime] : [],
+      }),
+    [appointments, date, mode, appointmentId, defaultValues?.startTime]
+  );
+
+  const timeListId = useId();
 
   // Atualiza campos quando defaultValues mudar (ex: Agenda preenche horário)
   useEffect(() => {
@@ -88,6 +100,12 @@ export const CreateAppointmentForm: React.FC<CreateAppointmentFormProps> = ({
     }
   }, [defaultValues]);
 
+  useEffect(() => {
+    if (startTime && !availableTimes.includes(startTime)) {
+      setStartTime('');
+    }
+  }, [availableTimes, startTime]);
+
   const computedTotalPrice = useMemo(
     () =>
       selectedServices.reduce((sum, serviceName) => {
@@ -116,9 +134,38 @@ export const CreateAppointmentForm: React.FC<CreateAppointmentFormProps> = ({
     );
   };
 
+  const handleTimeChange = (value: string) => {
+    if (!value) {
+      setStartTime('');
+      return;
+    }
+
+    if (!isHalfHourSlot(value)) {
+      showError('Escolha horários com intervalos de 30 minutos.');
+      return;
+    }
+
+    if (!availableTimes.includes(value)) {
+      showError('Horário indisponível para esta data.');
+      return;
+    }
+
+    setStartTime(value);
+  };
+
   const handleSubmit = async () => {
     if (!clientName.trim() || !clientPhone.trim() || !date || !startTime || selectedServices.length === 0) {
       showError('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    if (!isHalfHourSlot(startTime)) {
+      showError('Escolha horários com intervalos de 30 minutos.');
+      return;
+    }
+
+    if (!availableTimes.includes(startTime)) {
+      showError('Esse horário já está ocupado.');
       return;
     }
 
@@ -228,10 +275,22 @@ export const CreateAppointmentForm: React.FC<CreateAppointmentFormProps> = ({
           <label className="text-sm font-medium text-slate-400">Horário *</label>
           <input
             type="time"
+            min="08:00"
+            max="20:00"
+            step={1800}
+            list={timeListId}
             value={startTime}
-            onChange={(event) => setStartTime(event.target.value)}
+            onChange={(event) => handleTimeChange(event.target.value)}
             className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
           />
+          <datalist id={timeListId}>
+            {availableTimes.map((time) => (
+              <option key={time} value={time} />
+            ))}
+          </datalist>
+          {availableTimes.length === 0 && (
+            <p className="mt-1 text-xs text-red-400">Sem horários disponíveis nesta data.</p>
+          )}
         </div>
       </div>
       <div>

@@ -34,8 +34,8 @@ service cloud.firestore {
     }
 
     function isValidPaymentMethod(method) {
-      return method == 'Dinheiro' || method == 'Cartao de Credito' || 
-             method == 'Cartao de Debito' || method == 'Pix' || method == 'Transferencia';
+      return method == 'Dinheiro' || method == 'Cartão de Crédito' || 
+             method == 'Cartão de Débito' || method == 'Pix' || method == 'Transferencia';
     }
 
     match /{document=**} {

@@ -439,7 +439,8 @@ const NewPaymentForm: React.FC<NewPaymentFormProps> = ({ onClose }) => {
           className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
         >
           <option value="Dinheiro">Dinheiro</option>
-          <option value="Cartão">Cartão</option>
+          <option value="Cartão de Crédito">Cartão de Crédito</option>
+          <option value="Cartão de Débito">Cartão de Débito</option>
           <option value="Pix">Pix</option>
         </select>
       </div>

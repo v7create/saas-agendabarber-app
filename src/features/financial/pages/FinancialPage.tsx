@@ -77,31 +77,75 @@ interface PaymentMethodDistributionProps {
   percentage: number;
   amount: string;
   icon: string;
+  creditPercentage?: number;
+  debitPercentage?: number;
+  creditAmount?: number;
+  debitAmount?: number;
 }
 
 const PaymentMethodDistribution: React.FC<PaymentMethodDistributionProps> = ({
   method,
   percentage,
   amount,
-  icon
-}) => (
-  <div className="space-y-2">
-    <div className="flex justify-between items-center text-sm">
-      <div className="flex items-center space-x-2">
-        <Icon name={icon} className="w-5 h-5 text-slate-400" />
-        <span className="text-slate-300 font-medium">{method}</span>
-        <span className="text-slate-500">{percentage}% do total</span>
+  icon,
+  creditPercentage,
+  debitPercentage,
+  creditAmount,
+  debitAmount
+}) => {
+  const isCardMethod = method.toLowerCase().includes('cartão');
+  const hasSplit = isCardMethod && creditPercentage !== undefined && debitPercentage !== undefined;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between items-center text-sm">
+        <div className="flex items-center space-x-2">
+          <Icon name={icon} className="w-5 h-5 text-slate-400" />
+          <span className="text-slate-300 font-medium">{method}</span>
+          <span className="text-slate-500">{percentage}% do total</span>
+        </div>
+        <span className="font-bold text-slate-100">{amount}</span>
       </div>
-      <span className="font-bold text-slate-100">{amount}</span>
+      <div className="w-full bg-slate-700 rounded-full h-1.5">
+        {hasSplit ? (
+          <div className="flex h-1.5 rounded-full overflow-hidden">
+            {creditPercentage > 0 && (
+              <div
+                className="bg-violet-500 h-full transition-all duration-300"
+                style={{ width: `${creditPercentage}%` }}
+                title={`Crédito: R$ ${creditAmount?.toFixed(2) || '0.00'}`}
+              ></div>
+            )}
+            {debitPercentage > 0 && (
+              <div
+                className="bg-blue-600 h-full transition-all duration-300"
+                style={{ width: `${debitPercentage}%` }}
+                title={`Débito: R$ ${debitAmount?.toFixed(2) || '0.00'}`}
+              ></div>
+            )}
+          </div>
+        ) : (
+          <div
+            className="bg-violet-500 h-1.5 rounded-full transition-all duration-300"
+            style={{ width: `${percentage}%` }}
+          ></div>
+        )}
+      </div>
+      {hasSplit && (
+        <div className="flex gap-4 text-xs text-slate-400 pt-1">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-0.5 bg-violet-500 rounded-full"></div>
+            <span>Crédito: R$ {creditAmount?.toFixed(2) || '0.00'}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-0.5 bg-blue-600 rounded-full"></div>
+            <span>Débito: R$ {debitAmount?.toFixed(2) || '0.00'}</span>
+          </div>
+        </div>
+      )}
     </div>
-    <div className="w-full bg-slate-700 rounded-full h-1.5">
-      <div
-        className="bg-violet-500 h-1.5 rounded-full transition-all duration-300"
-        style={{ width: `${percentage}%` }}
-      ></div>
-    </div>
-  </div>
-);
+  );
+};
 
 /**
  * TransactionItem - Item de transação na lista
@@ -241,7 +285,8 @@ const NewTransactionForm: React.FC<NewTransactionFormProps> = ({ onClose }) => {
           className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
         >
           <option value="Dinheiro">Dinheiro</option>
-          <option value="Cartão">Cartão</option>
+          <option value="Cartão de Crédito">Cartão de Crédito</option>
+          <option value="Cartão de Débito">Cartão de Débito</option>
           <option value="Pix">Pix</option>
         </select>
       </div>
@@ -304,11 +349,35 @@ export const FinancialPage: React.FC = () => {
 
   // Distribuição por método de pagamento
   const totalIncome = paymentMethodStats.reduce((sum, stat) => sum + stat.income, 0);
-  const paymentDistribution = paymentMethodStats.map(stat => ({
-    method: stat.method,
-    amount: stat.income,
-    percentage: totalIncome > 0 ? Math.round((stat.income / totalIncome) * 100) : 0
-  }));
+  
+  // Agregar cartões e separar crédito/débito
+  const cardCreditStat = paymentMethodStats.find(s => s.method === 'Cartão de Crédito');
+  const cardDebitStat = paymentMethodStats.find(s => s.method === 'Cartão de Débito');
+  const otherStats = paymentMethodStats.filter(
+    s => s.method !== 'Cartão de Crédito' && s.method !== 'Cartão de Débito'
+  );
+
+  const cardTotal = (cardCreditStat?.income || 0) + (cardDebitStat?.income || 0);
+  const cardPercentage = totalIncome > 0 ? Math.round((cardTotal / totalIncome) * 100) : 0;
+  const cardCreditPercentage = totalIncome > 0 ? Math.round(((cardCreditStat?.income || 0) / totalIncome) * 100) : 0;
+  const cardDebitPercentage = totalIncome > 0 ? Math.round(((cardDebitStat?.income || 0) / totalIncome) * 100) : 0;
+
+  const paymentDistribution = [
+    ...(cardTotal > 0 ? [{
+      method: 'Cartão Crédito / Débito',
+      amount: cardTotal,
+      percentage: cardPercentage,
+      creditPercentage: cardCreditPercentage,
+      debitPercentage: cardDebitPercentage,
+      creditAmount: cardCreditStat?.income || 0,
+      debitAmount: cardDebitStat?.income || 0
+    }] : []),
+    ...otherStats.map(stat => ({
+      method: stat.method,
+      amount: stat.income,
+      percentage: totalIncome > 0 ? Math.round((stat.income / totalIncome) * 100) : 0
+    }))
+  ];
 
   // Ícones para métodos de pagamento
   const getPaymentIcon = (method: string): string => {
@@ -386,6 +455,10 @@ export const FinancialPage: React.FC = () => {
                   percentage={dist.percentage}
                   amount={`R$ ${dist.amount.toFixed(2)}`}
                   icon={getPaymentIcon(dist.method)}
+                  creditPercentage={'creditPercentage' in dist ? dist.creditPercentage : undefined}
+                  debitPercentage={'debitPercentage' in dist ? dist.debitPercentage : undefined}
+                  creditAmount={'creditAmount' in dist ? dist.creditAmount : undefined}
+                  debitAmount={'debitAmount' in dist ? dist.debitAmount : undefined}
                 />
               ))}
             </div>
