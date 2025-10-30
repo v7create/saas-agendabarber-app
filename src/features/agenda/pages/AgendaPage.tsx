@@ -27,7 +27,7 @@
  * - Stats do dia selecionado
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { Modal } from '@/components/Modal';
@@ -306,9 +306,9 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
 );
 
 /**
- * CalendarView - Grade de horários do dia
+ * DailyScheduleView - Grade de horários do dia
  */
-interface CalendarViewProps {
+interface DailyScheduleViewProps {
   appointments: Appointment[];
   onAppointmentClick: (appointment: Appointment) => void;
   onNewAppointment: (time: string) => void;
@@ -318,7 +318,7 @@ interface CalendarViewProps {
   statusActionLoading?: boolean;
 }
 
-const CalendarView: React.FC<CalendarViewProps> = ({
+const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   appointments,
   onAppointmentClick,
   onNewAppointment,
@@ -361,9 +361,154 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   );
 };
 
-/**
- * AppointmentDetailModal - Modal de detalhes do agendamento
- */
+interface AgendaMacroOverviewProps {
+  appointments: Appointment[];
+  startDate: string;
+  onDayDoubleClick?: (isoDate: string) => void;
+}
+
+const AgendaMacroOverview: React.FC<AgendaMacroOverviewProps> = ({ appointments, startDate, onDayDoubleClick }) => {
+  const currencyFormatter = useMemo(
+    () => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }),
+    []
+  );
+
+  const daySummaries = useMemo(() => {
+    const base = new Date(`${startDate}T00:00:00`);
+    const normalizedBase = Number.isNaN(base.getTime()) ? new Date() : base;
+    normalizedBase.setHours(0, 0, 0, 0);
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const current = new Date(normalizedBase);
+      current.setDate(normalizedBase.getDate() + index);
+      const isoDate = current.toISOString().split('T')[0];
+      const dayAppointments = appointments.filter(app => app.date === isoDate);
+      const confirmedAppointments = dayAppointments.filter(app => app.status === AppointmentStatus.Confirmed);
+      const pendingAppointments = dayAppointments.filter(app => app.status === AppointmentStatus.Pending);
+      const revenue = confirmedAppointments.reduce((sum, app) => sum + (app.price ?? 0), 0);
+
+      return {
+        isoDate,
+        date: current,
+        total: dayAppointments.length,
+        confirmed: confirmedAppointments.length,
+        pending: pendingAppointments.length,
+        revenue,
+        isBaseDay: index === 0,
+      };
+    });
+  }, [appointments, startDate]);
+
+  const totals = useMemo(() => {
+    return daySummaries.reduce(
+      (acc, day) => {
+        acc.totalAppointments += day.total;
+        acc.totalRevenue += day.revenue;
+        acc.totalConfirmed += day.confirmed;
+        return acc;
+      },
+      { totalAppointments: 0, totalRevenue: 0, totalConfirmed: 0 }
+    );
+  }, [daySummaries]);
+
+  const formatWeekday = (date: Date, isBaseDay: boolean) => {
+    if (isBaseDay) {
+      return 'Hoje';
+    }
+    return new Intl.DateTimeFormat('pt-BR', { weekday: 'long' })
+      .format(date)
+      .toUpperCase();
+  };
+
+  const formatDate = (date: Date) => {
+    const formatted = new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: 'long'
+    }).format(date);
+
+    const [dayPart, monthPart] = formatted.split(' de ');
+    if (!monthPart) {
+      return formatted;
+    }
+
+    return `${dayPart} de ${monthPart.charAt(0).toUpperCase()}${monthPart.slice(1)}`;
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Card className="!p-4 bg-slate-900/70 border border-slate-800">
+          <p className="text-xs text-slate-400 uppercase tracking-wide">Agendamentos (7 dias)</p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+              <p className="text-[11px] text-slate-500 uppercase">Confirmados</p>
+              <p className="mt-2 text-2xl font-bold text-emerald-400">{totals.totalConfirmed}</p>
+            </div>
+            <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+              <p className="text-[11px] text-slate-500 uppercase">Total</p>
+              <p className="mt-2 text-2xl font-bold text-slate-100">{totals.totalAppointments}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="!p-4 flex items-center justify-between bg-slate-900/70 border border-slate-800">
+          <div>
+            <p className="text-xs text-slate-400 uppercase tracking-wide">Receita Prevista</p>
+            <p className="text-xl font-bold text-emerald-400">{currencyFormatter.format(totals.totalRevenue)}</p>
+            <p className="text-[11px] text-slate-500 mt-1">Considera agendamentos confirmados</p>
+          </div>
+          <Icon name="trendUp" className="w-8 h-8 text-emerald-400" />
+        </Card>
+      </div>
+
+      <div className="space-y-3">
+        {daySummaries.map(day => {
+          const weekday = formatWeekday(day.date, day.isBaseDay);
+          const formattedDate = formatDate(day.date);
+          const highlightClass = day.isBaseDay
+            ? 'border-violet-500/40 shadow-[0_0_14px_rgba(139,92,246,0.4)]'
+            : 'border-slate-800';
+          return (
+            <Card
+              onDoubleClick={() => onDayDoubleClick?.(day.isoDate)}
+              key={day.isoDate}
+              className={`!p-4 bg-slate-900/80 border ${highlightClass} ${onDayDoubleClick ? 'cursor-zoom-in' : ''}`}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-slate-500 uppercase tracking-wide">{weekday}</p>
+                  <p className="text-sm font-semibold text-slate-200">{formattedDate}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
+                <div>
+                  <p className="text-[11px] uppercase text-slate-500 tracking-wide">Total</p>
+                  <p className="mt-1 text-base font-semibold text-slate-200">{day.total}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase text-slate-500 tracking-wide">Confirmados</p>
+                  <p className="mt-1 text-base font-semibold text-emerald-400">{day.confirmed}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase text-slate-500 tracking-wide">Pendentes</p>
+                  <p className="mt-1 text-base font-semibold text-yellow-400">{day.pending}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-[11px] uppercase text-slate-500 tracking-wide">Receita Prevista</p>
+                <p className="text-base font-semibold text-emerald-400">
+                  {currencyFormatter.format(day.revenue)}
+                </p>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 interface AppointmentDetailModalProps {
   appointment: Appointment;
   onClose: () => void;
@@ -449,7 +594,7 @@ type ViewMode = 'timeline' | 'kanban' | 'calendar';
 
 export const AgendaPage: React.FC = () => {
   // Hooks
-  const { appointments, filterByDate, filterByStatus, updateStatus, fetchUpcoming } = useAppointments({ autoFetch: 'upcoming' });
+  const { appointments, filterByDate, updateStatus, fetchUpcoming } = useAppointments({ autoFetch: 'upcoming' });
   const { openModal, closeModal, isModalOpen, success, error: showError } = useUI();
 
   // State
@@ -470,13 +615,18 @@ export const AgendaPage: React.FC = () => {
   }, [appointments, selectedDate, filterByDate]);
 
   // Stats
-  const totalAppointments = dayAppointments.length;
-  const confirmedCount = filterByStatus(AppointmentStatus.Confirmed).filter(
-    a => a.date === selectedDate
-  ).length;
-  const pendingCount = filterByStatus(AppointmentStatus.Pending).filter(
-    a => a.date === selectedDate
-  ).length;
+  const confirmedCount = useMemo(
+    () => dayAppointments.filter(a => a.status === AppointmentStatus.Confirmed).length,
+    [dayAppointments]
+  );
+  const pendingCount = useMemo(
+    () => dayAppointments.filter(a => a.status === AppointmentStatus.Pending).length,
+    [dayAppointments]
+  );
+  const completedCount = useMemo(
+    () => dayAppointments.filter(a => a.status === AppointmentStatus.Completed).length,
+    [dayAppointments]
+  );
   const nextAppointment = dayAppointments.find(
     a => a.status !== AppointmentStatus.Cancelled
   );
@@ -654,6 +804,49 @@ export const AgendaPage: React.FC = () => {
     ];
   }, [dayAppointments]);
 
+  const rangeLabels = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const parsedBase = new Date(`${selectedDate}T00:00:00`);
+    const normalizedBase = Number.isNaN(parsedBase.getTime()) ? new Date(today) : parsedBase;
+    normalizedBase.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(normalizedBase);
+    endDate.setDate(normalizedBase.getDate() + 6);
+
+    const capitalize = (value: string) => (value ? value.charAt(0).toUpperCase() + value.slice(1) : value);
+
+    const formatLabel = (date: Date, isBase: boolean) => {
+      const isToday = date.getTime() === today.getTime();
+      const weekday = isBase && isToday
+        ? 'Hoje'
+        : capitalize(new Intl.DateTimeFormat('pt-BR', { weekday: 'long' }).format(date));
+
+      const formattedDayMonth = new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: 'long'
+      }).format(date);
+
+      const [dayPart, monthPart] = formattedDayMonth.split(' de ');
+      if (!monthPart) {
+        return `${weekday}, ${capitalize(formattedDayMonth)}`;
+      }
+
+      return `${weekday}, ${dayPart} de ${capitalize(monthPart)}`;
+    };
+
+    return {
+      start: formatLabel(normalizedBase, true),
+      end: formatLabel(endDate, false)
+    };
+  }, [selectedDate]);
+
+  const handleDayCardDoubleClick = useCallback((isoDate: string) => {
+    setSelectedDate(isoDate);
+    setViewMode('timeline');
+  }, [setSelectedDate, setViewMode]);
+
   return (
     <>
       <div className="space-y-6 pb-6">
@@ -690,28 +883,28 @@ export const AgendaPage: React.FC = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-3 text-left">
           <Card className="!p-3 flex items-center">
-            <Icon name="calendar" className="w-5 h-5 mr-3 text-violet-400" />
+            <Icon name="check" className="w-5 h-5 mr-3 text-violet-400" />
             <div>
-              <p className="text-slate-400 text-xs">Total Agendamentos</p>
-              <p className="font-bold text-xl text-slate-100">{totalAppointments}</p>
-            </div>
-          </Card>
-          <Card className="!p-3 flex items-center">
-            <Icon name="check" className="w-5 h-5 mr-3 text-green-400" />
-            <div>
-              <p className="text-slate-400 text-xs">Confirmados</p>
+              <p className="text-slate-400 text-xs">Agendamentos Confirmados</p>
               <p className="font-bold text-xl text-slate-100">{confirmedCount}</p>
             </div>
           </Card>
           <Card className="!p-3 flex items-center">
             <Icon name="clock" className="w-5 h-5 mr-3 text-yellow-400" />
             <div>
-              <p className="text-slate-400 text-xs">Pendentes</p>
+              <p className="text-slate-400 text-xs">Aguardando Confirmação</p>
               <p className="font-bold text-xl text-slate-100">{pendingCount}</p>
             </div>
           </Card>
           <Card className="!p-3 flex items-center">
-            <Icon name="clock" className="w-5 h-5 mr-3 text-slate-400" />
+            <Icon name="checkCircle" className="w-5 h-5 mr-3 text-green-400" />
+            <div>
+              <p className="text-slate-400 text-xs">Concluídos</p>
+              <p className="font-bold text-xl text-slate-100">{completedCount}</p>
+            </div>
+          </Card>
+          <Card className="!p-3 flex items-center">
+            <Icon name="calendar" className="w-5 h-5 mr-3 text-slate-400" />
             <div>
               <p className="text-slate-400 text-xs">Próximo Cliente</p>
               <p className="font-bold text-xl text-slate-100">
@@ -764,7 +957,7 @@ export const AgendaPage: React.FC = () => {
           <Card>
             <h3 className="font-bold text-slate-100 mb-2">Linha do Tempo</h3>
             <p className="text-sm text-slate-400 mb-6">Visualização cronológica dos agendamentos</p>
-            <CalendarView
+            <DailyScheduleView
               appointments={dayAppointments}
               onAppointmentClick={handleAppointmentClick}
               onNewAppointment={handleNewAppointment}
@@ -798,17 +991,17 @@ export const AgendaPage: React.FC = () => {
         )}
 
         {viewMode === 'calendar' && (
-          <Card>
-            <h3 className="font-bold text-slate-100 mb-2">Grade de Horários</h3>
-            <p className="text-sm text-slate-400 mb-6">Todos os horários do dia</p>
-            <CalendarView
-              appointments={dayAppointments}
-              onAppointmentClick={handleAppointmentClick}
-              onNewAppointment={handleNewAppointment}
-              onEditAppointment={handleEditAppointment}
-              onCompleteAppointment={handleCompleteAppointment}
-              onCancelAppointment={handleCancelAppointment}
-              statusActionLoading={actionLoading}
+          <Card className="!p-5 space-y-5">
+            <div>
+              <h3 className="font-bold text-slate-100">Próximos 7 Dias</h3>
+              <p className="text-sm text-slate-400">
+                Agendamentos e Receita Prevista de <span className="font-semibold text-slate-200">{rangeLabels.start}</span> até <span className="font-semibold text-slate-200">{rangeLabels.end}</span>. Mais detalhes em <span className="text-violet-300">Timeline</span>.
+              </p>
+            </div>
+            <AgendaMacroOverview
+              appointments={appointments}
+              startDate={selectedDate}
+              onDayDoubleClick={handleDayCardDoubleClick}
             />
           </Card>
         )}
