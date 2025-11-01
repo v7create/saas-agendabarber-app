@@ -336,7 +336,7 @@ const NewAppointmentForm: React.FC<NewAppointmentFormProps> = ({ onClose, editin
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div>
+        <div className="col-span-1">
           <label className="text-sm font-medium text-slate-400">Data *</label>
           <input
             type="date"
@@ -345,7 +345,7 @@ const NewAppointmentForm: React.FC<NewAppointmentFormProps> = ({ onClose, editin
             className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
           />
         </div>
-        <div>
+        <div className="col-span-1">
           <label className="text-sm font-medium text-slate-400">Horário *</label>
           <input
             type="time"
