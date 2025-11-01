@@ -106,13 +106,6 @@ export function useClients(options: UseClientsOptions = {}) {
     },
 
     /**
-     * Filtra clientes por avaliação mínima
-     */
-    filterByRating: (minRating: number) => {
-      return clients.filter(c => c.rating >= minRating);
-    },
-
-    /**
      * Retorna clientes ativos
      */
     getActiveClients: () => {
@@ -145,15 +138,6 @@ export function useClients(options: UseClientsOptions = {}) {
     },
 
     /**
-     * Retorna clientes com melhor avaliação
-     */
-    getTopRatedClients: (limit: number = 10) => {
-      return [...clients]
-        .sort((a, b) => b.rating - a.rating)
-        .slice(0, limit);
-    },
-
-    /**
      * Retorna clientes recentes (última visita)
      */
     getRecentClients: (limit: number = 10) => {
@@ -176,10 +160,6 @@ export function useClients(options: UseClientsOptions = {}) {
       
       const averageVisits = total > 0 ? totalVisits / total : 0;
       const averageSpent = total > 0 ? totalRevenue / total : 0;
-      
-      const averageRating = total > 0 
-        ? clients.reduce((sum, c) => sum + c.rating, 0) / total 
-        : 0;
 
       return {
         total,
@@ -189,7 +169,6 @@ export function useClients(options: UseClientsOptions = {}) {
         totalRevenue,
         averageVisits,
         averageSpent,
-        averageRating,
       };
     },
 

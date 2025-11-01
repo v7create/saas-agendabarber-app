@@ -91,13 +91,6 @@ const formatCurrencyBRL = (value: number) => {
   });
 };
 
-const formatRatingLabel = (rating: number) => {
-  if (!Number.isFinite(rating)) return '0';
-  const normalized = Math.min(5, Math.max(0, rating));
-  const formatted = normalized.toFixed(1);
-  return formatted.endsWith('.0') ? formatted.slice(0, -2) : formatted.replace('.', ',');
-};
-
 const formatLastVisitLabel = (value?: string | null) => {
   if (!value) return 'Nunca';
   const date = new Date(value);
@@ -125,7 +118,6 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => 
 
   const displayName = useMemo(() => formatDisplayName(client.name), [client.name]);
   const lastVisit = useMemo(() => formatLastVisitLabel(client.lastVisit), [client.lastVisit]);
-  const ratingLabel = useMemo(() => formatRatingLabel(client.rating), [client.rating]);
   const totalSpent = useMemo(() => formatCurrencyBRL(client.spent), [client.spent]);
   const whatsappLink = useMemo(() => buildWhatsAppLink(client.phone), [client.phone]);
 
@@ -198,10 +190,6 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => 
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-400">
                 <div className="flex items-center space-x-1">
-                  <Icon name="star" className="w-4 h-4 text-yellow-400" />
-                  <span className="text-slate-200 font-semibold">{ratingLabel}</span>
-                </div>
-                <div className="flex items-center space-x-1">
                   <Icon name="calendar" className="w-4 h-4 text-slate-500" />
                   <span>{lastVisit}</span>
                 </div>
@@ -271,19 +259,6 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => 
               <p className="font-medium text-slate-100">{client.email}</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Avaliação completa</p>
-              <div className="mt-2 flex items-center space-x-1 text-yellow-400">
-                {[...Array(5)].map((_, index) => (
-                  <Icon
-                    key={index}
-                    name="star"
-                    className={`w-5 h-5 ${index < Math.round(client.rating) ? 'fill-current' : ''}`}
-                  />
-                ))}
-                <span className="text-slate-400 text-sm ml-1">({client.rating.toFixed(1)})</span>
-              </div>
-            </div>
-            <div>
               <p className="text-xs uppercase tracking-wide text-slate-500">Última visita</p>
               <p className="font-medium text-slate-200">{client.lastVisit || 'Nunca'}</p>
             </div>
@@ -325,7 +300,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClose }) => {
   const [name, setName] = useState(initialData?.name || '');
   const [phone, setPhone] = useState(initialData?.phone || '');
   const [email, setEmail] = useState(initialData?.email || '');
-  const [rating, setRating] = useState(initialData?.rating || 0);
   const [notes, setNotes] = useState(initialData?.notes || '');
   const [loading, setLoading] = useState(false);
 
@@ -334,7 +308,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClose }) => {
       setName(initialData.name || '');
       setPhone(initialData.phone || '');
       setEmail(initialData.email || '');
-      setRating(initialData.rating || 0);
       setNotes(initialData.notes || '');
       return;
     }
@@ -342,18 +315,12 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClose }) => {
     setName('');
     setPhone('');
     setEmail('');
-    setRating(0);
     setNotes('');
   }, [initialData]);
 
   const handleSubmit = async () => {
     if (!name.trim() || !phone.trim() || !email.trim()) {
       showError('Preencha todos os campos obrigatórios');
-      return;
-    }
-
-    if (rating < 0 || rating > 5) {
-      showError('Avaliação deve estar entre 0 e 5');
       return;
     }
 
@@ -374,7 +341,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClose }) => {
           name: name.trim(),
           phone: formattedPhone,
           email: email.trim(),
-          rating,
           notes: notes.trim()
         };
         await updateClient(initialData.id, updateData);
@@ -385,7 +351,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClose }) => {
           name: name.trim(),
           phone: formattedPhone,
           email: email.trim(),
-          rating,
           notes: notes.trim()
         };
         await createClient(createData);
@@ -428,19 +393,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ initialData, onClose }) => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="cliente@email.com"
-          className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium text-slate-400">Avaliação (0-5)</label>
-        <input
-          type="number"
-          step="0.1"
-          min="0"
-          max="5"
-          value={rating}
-          onChange={(e) => setRating(parseFloat(e.target.value) || 0)}
-          placeholder="0.0"
           className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
         />
       </div>
@@ -528,7 +480,7 @@ export const ClientsPage: React.FC = () => {
 
   // Estatísticas
   const stats = getStats();
-  const vipClients = clients.filter(c => c.rating >= 4.5).length;
+  const vipClients = clients.filter(c => c.spent >= 1000).length;
 
   // Filtros aplicados
   const filteredClients = useMemo(() => {

@@ -107,6 +107,7 @@ interface UpcomingAppointmentItemProps {
   onRemove: (appointment: Appointment) => void;
   onComplete: (appointment: Appointment) => void;
   onStatusChange: (appointment: Appointment, newStatus: AppointmentStatus) => void;
+  onViewDetails: (appointment: Appointment) => void;
 }
 
 const UpcomingAppointmentItem: React.FC<UpcomingAppointmentItemProps> = ({
@@ -114,7 +115,8 @@ const UpcomingAppointmentItem: React.FC<UpcomingAppointmentItemProps> = ({
   onEdit,
   onRemove,
   onComplete,
-  onStatusChange
+  onStatusChange,
+  onViewDetails
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -130,17 +132,22 @@ const UpcomingAppointmentItem: React.FC<UpcomingAppointmentItemProps> = ({
   return (
     <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-4 hover:border-slate-600 transition-colors">
       <div className="flex justify-between items-start mb-2">
-        <div className="flex-1">
+        <button
+          onClick={() => onViewDetails(appointment)}
+          className="flex-1 text-left"
+        >
           <div className="flex items-center space-x-2 mb-1">
             <p className="font-bold text-slate-100">{appointment.clientName}</p>
-            <StatusSelector
-              currentStatus={appointment.status}
-              onStatusChange={(newStatus) => onStatusChange(appointment, newStatus)}
-            />
+            <div onClick={(e) => e.stopPropagation()}>
+              <StatusSelector
+                currentStatus={appointment.status}
+                onStatusChange={(newStatus) => onStatusChange(appointment, newStatus)}
+              />
+            </div>
           </div>
           <p className="text-sm text-slate-300">{appointment.services.join(' + ')}</p>
-        </div>
-        <div className="relative">
+        </button>
+        <div className="relative" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="p-1 text-slate-400 hover:text-white"
@@ -183,13 +190,18 @@ const UpcomingAppointmentItem: React.FC<UpcomingAppointmentItemProps> = ({
           )}
         </div>
       </div>
-      <div className="flex items-center justify-between text-sm text-slate-400">
-        <span className="flex items-center">
-          <Icon name="calendar" className="w-4 h-4 mr-1" />
-          {dateFormatted} • {appointment.startTime}
-        </span>
-        <span className="font-bold text-slate-100">{priceLabel}</span>
-      </div>
+      <button
+        onClick={() => onViewDetails(appointment)}
+        className="w-full text-left"
+      >
+        <div className="flex items-center justify-between text-sm text-slate-400">
+          <span className="flex items-center">
+            <Icon name="calendar" className="w-4 h-4 mr-1" />
+            {dateFormatted} • {appointment.startTime}
+          </span>
+          <span className="font-bold text-slate-100">{priceLabel}</span>
+        </div>
+      </button>
     </div>
   );
 };
@@ -263,7 +275,6 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onClose }) => {
         name: name.trim(),
         phone: formattedPhone,
         email: email.trim(),
-        rating: 0,
         notes: ''
       });
       success('Cliente cadastrado com sucesso!');
@@ -482,6 +493,7 @@ export const DashboardPage: React.FC = () => {
   // Estado local
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [viewDetailsAppointment, setViewDetailsAppointment] = useState<Appointment | null>(null);
 
   // Data formatada
   const today = new Date();
@@ -641,6 +653,19 @@ export const DashboardPage: React.FC = () => {
     openModal('newAppointment');
   };
 
+  const handleViewDetails = (appointment: Appointment) => {
+    setViewDetailsAppointment(appointment);
+    openModal('viewDetails');
+  };
+
+  const handleEditFromDetails = () => {
+    if (viewDetailsAppointment) {
+      closeModal('viewDetails');
+      setEditingAppointment(viewDetailsAppointment);
+      openModal('editAppointment');
+    }
+  };
+
   return (
     <>
       <div className="space-y-6 pb-6">
@@ -747,6 +772,7 @@ export const DashboardPage: React.FC = () => {
                     onRemove={handleRemoveClick}
                     onComplete={handleCompleteClick}
                     onStatusChange={handleStatusChange}
+                    onViewDetails={handleViewDetails}
                   />
                 ))}
               </div>
@@ -853,6 +879,77 @@ export const DashboardPage: React.FC = () => {
         title="Registrar Transação"
       >
         <NewPaymentForm onClose={() => closeModal('newPayment')} />
+      </Modal>
+
+      {/* Modal de Detalhes */}
+      <Modal
+        isOpen={isModalOpen('viewDetails')}
+        onClose={() => {
+          closeModal('viewDetails');
+          setViewDetailsAppointment(null);
+        }}
+        title="Detalhes do Agendamento"
+        onEdit={handleEditFromDetails}
+      >
+        {viewDetailsAppointment && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-2xl font-bold text-slate-100">{viewDetailsAppointment.clientName}</p>
+                <p className="text-slate-400">{viewDetailsAppointment.clientPhone}</p>
+              </div>
+              <StatusSelector
+                currentStatus={viewDetailsAppointment.status}
+                onStatusChange={(newStatus) => handleStatusChange(viewDetailsAppointment, newStatus)}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-700">
+              <div>
+                <p className="text-xs text-slate-400">Data</p>
+                <p className="font-semibold text-slate-200">{viewDetailsAppointment.date}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Horário</p>
+                <p className="font-semibold text-slate-200">{viewDetailsAppointment.startTime}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Duração</p>
+                <p className="font-semibold text-slate-200">{viewDetailsAppointment.duration} min</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Preço</p>
+                <p className="font-semibold text-slate-200">
+                  {viewDetailsAppointment.price ? `R$ ${viewDetailsAppointment.price.toFixed(2)}` : '-'}
+                </p>
+              </div>
+            </div>
+            <div className="pt-4 border-t border-slate-700">
+              <p className="text-xs text-slate-400 mb-2">Serviços</p>
+              <div className="flex flex-wrap gap-2">
+                {viewDetailsAppointment.services.map((service, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-1 bg-violet-500/20 text-violet-400 text-xs rounded-full"
+                  >
+                    {service}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {viewDetailsAppointment.notes && (
+              <div className="pt-4 border-t border-slate-700">
+                <p className="text-xs text-slate-400 mb-2">Observações</p>
+                <p className="text-sm text-slate-300 italic">"{viewDetailsAppointment.notes}"</p>
+              </div>
+            )}
+            <button
+              onClick={() => closeModal('viewDetails')}
+              className="w-full bg-violet-600 text-white font-bold py-2 rounded-lg hover:bg-violet-700 mt-4"
+            >
+              Fechar
+            </button>
+          </div>
+        )}
       </Modal>
     </>
   );

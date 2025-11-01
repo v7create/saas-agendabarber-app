@@ -1102,6 +1102,13 @@ export const AgendaPage: React.FC = () => {
           setSelectedAppointment(null);
         }}
         title="Detalhes do Agendamento"
+        onEdit={() => {
+          if (selectedAppointment) {
+            closeModal('appointmentDetail');
+            setEditingAppointment(selectedAppointment);
+            openModal('editAppointment');
+          }
+        }}
       >
         {selectedAppointment && (
           <AppointmentDetailModal

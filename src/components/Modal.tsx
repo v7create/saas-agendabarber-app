@@ -8,9 +8,10 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  onEdit?: () => void; // Botão de edição opcional
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, onEdit }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -55,9 +56,20 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
       >
         <div className="flex justify-between items-center p-4 border-b border-slate-700">
           <h2 className="text-lg font-bold text-slate-100">{title}</h2>
-          <button onClick={onClose} className="p-1 text-slate-400 hover:text-white transition-colors">
-            <Icon name="x" className="w-6 h-6" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onEdit && (
+              <button 
+                onClick={onEdit} 
+                className="p-1 text-slate-400 hover:text-violet-400 transition-colors"
+                title="Editar agendamento"
+              >
+                <Icon name="pencil" className="w-5 h-5" />
+              </button>
+            )}
+            <button onClick={onClose} className="p-1 text-slate-400 hover:text-white transition-colors">
+              <Icon name="x" className="w-6 h-6" />
+            </button>
+          </div>
         </div>
         <div className="p-6 max-h-[85vh] overflow-y-auto">
             {children}

@@ -118,10 +118,6 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
         throw new Error('Email é obrigatório');
       }
 
-      if (data.rating !== undefined && (data.rating < 0 || data.rating > 5)) {
-        throw new Error('Avaliação deve estar entre 0 e 5');
-      }
-
       // Gera iniciais do avatar
       const avatarInitials = data.name
         .split(' ')
@@ -187,9 +183,7 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
       }
 
       // Validações
-      if (data.rating !== undefined && (data.rating < 0 || data.rating > 5)) {
-        throw new Error('Avaliação deve estar entre 0 e 5');
-      }
+      // Nenhuma validação adicional necessária no momento
 
       // Atualiza iniciais se nome mudou
       let updateData = { ...data };

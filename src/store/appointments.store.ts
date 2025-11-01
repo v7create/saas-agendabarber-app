@@ -347,7 +347,6 @@ export const useAppointmentsStore = create<AppointmentsState>((set, get) => ({
               visits: 1,
               spent: appointment.price || 0,
               lastVisit: appointment.date,
-              rating: 5, // Rating padrão
             });
           }
         } catch (clientError) {

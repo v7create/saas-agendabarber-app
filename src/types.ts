@@ -33,7 +33,6 @@ export interface Client {
     phone: string;
     email: string;
     lastVisit: string;
-    rating: number;
     visits: number;
     spent: number;
     notes: string;
