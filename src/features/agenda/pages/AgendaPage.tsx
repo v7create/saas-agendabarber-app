@@ -31,6 +31,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { Modal } from '@/components/Modal';
+import { StatusSelector } from '@/components/StatusSelector';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useUI } from '@/hooks/useUI';
 import { Appointment, AppointmentStatus } from '@/types';
@@ -49,6 +50,7 @@ interface TimelineSlotProps {
   onEditAppointment?: (appointment: Appointment) => void;
   onCompleteAppointment?: (appointment: Appointment) => void;
   onCancelAppointment?: (appointment: Appointment) => void;
+  onStatusChange?: (appointment: Appointment, newStatus: AppointmentStatus) => void;
   statusActionLoading?: boolean;
 }
 
@@ -148,6 +150,7 @@ const TimelineSlot: React.FC<TimelineSlotProps> = ({
   onEditAppointment,
   onCompleteAppointment,
   onCancelAppointment,
+  onStatusChange,
   statusActionLoading
 }) => {
   if (appointment) {
@@ -158,42 +161,31 @@ const TimelineSlot: React.FC<TimelineSlotProps> = ({
           <div className="w-2 h-2 rounded-full bg-violet-500 absolute top-1 -left-1 ring-4 ring-slate-900"></div>
         </div>
         <div className="flex-1 -mt-1">
-          <button
-            onClick={() => onAppointmentClick?.(appointment)}
-            className="w-full text-left"
-          >
-            <Card className="bg-slate-800 hover:bg-slate-750 transition-colors">
-              <div className="flex justify-between items-start">
-                <div className="pr-2">
-                  <p className="font-bold text-slate-100">{appointment.clientName}</p>
-                  <p className="text-sm text-slate-300">{appointment.services.join(' + ')}</p>
-                  <p className="text-xs text-slate-400 mt-1">{appointment.duration}min</p>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <span
-                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                      appointment.status === AppointmentStatus.Confirmed
-                        ? 'bg-violet-500/20 text-violet-400'
-                        : appointment.status === AppointmentStatus.Pending
-                        ? 'bg-yellow-500/20 text-yellow-400'
-                        : appointment.status === AppointmentStatus.Completed
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-red-500/20 text-red-400'
-                    }`}
-                  >
-                    {appointment.status}
-                  </span>
-                  <AppointmentActionMenu
-                    appointment={appointment}
-                    onEdit={onEditAppointment}
-                    onComplete={onCompleteAppointment}
-                    onCancel={onCancelAppointment}
-                    disabledActions={statusActionLoading}
-                  />
-                </div>
+          <Card className="bg-slate-800 hover:bg-slate-750 transition-colors">
+            <div className="flex justify-between items-start">
+              <button
+                onClick={() => onAppointmentClick?.(appointment)}
+                className="flex-1 pr-2 text-left"
+              >
+                <p className="font-bold text-slate-100">{appointment.clientName}</p>
+                <p className="text-sm text-slate-300">{appointment.services.join(' + ')}</p>
+                <p className="text-xs text-slate-400 mt-1">{appointment.duration}min</p>
+              </button>
+              <div className="flex items-start space-x-2" onClick={(e) => e.stopPropagation()}>
+                <StatusSelector
+                  currentStatus={appointment.status}
+                  onStatusChange={(newStatus) => onStatusChange?.(appointment, newStatus)}
+                />
+                <AppointmentActionMenu
+                  appointment={appointment}
+                  onEdit={onEditAppointment}
+                  onComplete={onCompleteAppointment}
+                  onCancel={onCancelAppointment}
+                  disabledActions={statusActionLoading}
+                />
               </div>
-            </Card>
-          </button>
+            </div>
+          </Card>
         </div>
       </div>
     );
@@ -232,6 +224,7 @@ interface KanbanColumnProps {
   onEditAppointment?: (appointment: Appointment) => void;
   onCompleteAppointment?: (appointment: Appointment) => void;
   onCancelAppointment?: (appointment: Appointment) => void;
+  onStatusChange?: (appointment: Appointment, newStatus: AppointmentStatus) => void;
   statusActionLoading?: boolean;
 }
 
@@ -244,6 +237,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
   onEditAppointment,
   onCompleteAppointment,
   onCancelAppointment,
+  onStatusChange,
   statusActionLoading
 }) => (
   <div className="flex-1 min-w-0" data-status={status}>
@@ -254,18 +248,17 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
     <div className="space-y-2">
       {appointments.length > 0 ? (
         appointments.map(app => (
-          <button
-            key={app.id}
-            onClick={() => onAppointmentClick(app)}
-            className="w-full text-left"
-          >
-            <Card className="!p-3 hover:bg-slate-750 transition-colors space-y-2">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-bold text-slate-100 text-sm">{app.startTime}</p>
-                  <p className="text-xs text-slate-300 mt-1">{app.clientName}</p>
-                  <p className="text-xs text-slate-400 mt-1">{app.services.join(', ')}</p>
-                </div>
+          <Card key={app.id} className="!p-3 hover:bg-slate-750 transition-colors space-y-2">
+            <div className="flex justify-between items-start">
+              <button
+                onClick={() => onAppointmentClick(app)}
+                className="flex-1 text-left"
+              >
+                <p className="font-bold text-slate-100 text-sm">{app.startTime}</p>
+                <p className="text-xs text-slate-300 mt-1">{app.clientName}</p>
+                <p className="text-xs text-slate-400 mt-1">{app.services.join(', ')}</p>
+              </button>
+              <div onClick={(e) => e.stopPropagation()}>
                 <AppointmentActionMenu
                   appointment={app}
                   onEdit={onEditAppointment}
@@ -274,26 +267,17 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
                   disabledActions={statusActionLoading}
                 />
               </div>
-              <div className="flex items-center justify-between text-xs text-slate-400">
-                <span>{app.duration} min</span>
-                <span
-                  className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                    app.status === AppointmentStatus.Confirmed
-                      ? 'bg-violet-500/20 text-violet-400'
-                      : app.status === AppointmentStatus.Pending
-                      ? 'bg-yellow-500/20 text-yellow-400'
-                      : app.status === AppointmentStatus.Completed
-                      ? 'bg-green-500/20 text-green-400'
-                      : app.status === AppointmentStatus.Cancelled
-                      ? 'bg-red-500/20 text-red-400'
-                      : 'bg-slate-500/20 text-slate-400'
-                  }`}
-                >
-                  {app.status}
-                </span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>{app.duration} min</span>
+              <div onClick={(e) => e.stopPropagation()}>
+                <StatusSelector
+                  currentStatus={app.status}
+                  onStatusChange={(newStatus) => onStatusChange?.(app, newStatus)}
+                />
               </div>
-            </Card>
-          </button>
+            </div>
+          </Card>
         ))
       ) : (
         <div className="text-center py-4">
@@ -315,6 +299,7 @@ interface DailyScheduleViewProps {
   onEditAppointment?: (appointment: Appointment) => void;
   onCompleteAppointment?: (appointment: Appointment) => void;
   onCancelAppointment?: (appointment: Appointment) => void;
+  onStatusChange?: (appointment: Appointment, newStatus: AppointmentStatus) => void;
   statusActionLoading?: boolean;
 }
 
@@ -325,6 +310,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   onEditAppointment,
   onCompleteAppointment,
   onCancelAppointment,
+  onStatusChange,
   statusActionLoading
 }) => {
   // Gera slots de 30 em 30 minutos das 8h às 20h
@@ -353,6 +339,7 @@ const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             onEditAppointment={onEditAppointment}
             onCompleteAppointment={onCompleteAppointment}
             onCancelAppointment={onCancelAppointment}
+            onStatusChange={onStatusChange}
             statusActionLoading={statusActionLoading}
           />
         );
@@ -530,11 +517,13 @@ const AgendaMacroOverview: React.FC<AgendaMacroOverviewProps> = ({
 interface AppointmentDetailModalProps {
   appointment: Appointment;
   onClose: () => void;
+  onStatusChange?: (appointment: Appointment, newStatus: AppointmentStatus) => void;
 }
 
 const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({
   appointment,
-  onClose
+  onClose,
+  onStatusChange
 }) => (
   <div className="space-y-4">
     <div className="flex justify-between items-start">
@@ -542,21 +531,10 @@ const AppointmentDetailModal: React.FC<AppointmentDetailModalProps> = ({
         <p className="text-2xl font-bold text-slate-100">{appointment.clientName}</p>
         <p className="text-slate-400">{appointment.clientPhone}</p>
       </div>
-      <span
-        className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-          appointment.status === AppointmentStatus.Confirmed
-            ? 'bg-violet-500/20 text-violet-400'
-            : appointment.status === AppointmentStatus.Pending
-            ? 'bg-yellow-500/20 text-yellow-400'
-            : appointment.status === AppointmentStatus.Completed
-            ? 'bg-green-500/20 text-green-400'
-            : appointment.status === AppointmentStatus.Cancelled
-            ? 'bg-red-500/20 text-red-400'
-            : 'bg-slate-500/20 text-slate-400'
-        }`}
-      >
-        {appointment.status}
-      </span>
+      <StatusSelector
+        currentStatus={appointment.status}
+        onStatusChange={(newStatus) => onStatusChange?.(appointment, newStatus)}
+      />
     </div>
     <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-700">
       <div>
@@ -783,6 +761,20 @@ export const AgendaPage: React.FC = () => {
     handleOpenCompleteModal(appointment);
   };
 
+  const handleQuickStatusChange = async (appointment: Appointment, newStatus: AppointmentStatus) => {
+    try {
+      setActionLoading(true);
+      await updateStatus(appointment.id, newStatus);
+      await fetchUpcoming();
+      success(`Status alterado para ${newStatus} com sucesso!`);
+    } catch (error) {
+      console.error('Erro ao alterar status:', error);
+      showError('Erro ao alterar status do agendamento');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleEditModalClose = () => {
     closeModal('editAppointment');
     setEditingAppointment(null);
@@ -982,6 +974,7 @@ export const AgendaPage: React.FC = () => {
               onEditAppointment={handleEditAppointment}
               onCompleteAppointment={handleCompleteAppointment}
               onCancelAppointment={handleCancelAppointment}
+              onStatusChange={handleQuickStatusChange}
               statusActionLoading={actionLoading}
             />
           </Card>
@@ -1001,6 +994,7 @@ export const AgendaPage: React.FC = () => {
                   onEditAppointment={handleEditAppointment}
                   onCompleteAppointment={handleCompleteAppointment}
                   onCancelAppointment={handleCancelAppointment}
+                  onStatusChange={handleQuickStatusChange}
                   statusActionLoading={actionLoading}
                 />
               ))}
@@ -1116,6 +1110,7 @@ export const AgendaPage: React.FC = () => {
               closeModal('appointmentDetail');
               setSelectedAppointment(null);
             }}
+            onStatusChange={handleQuickStatusChange}
           />
         )}
       </Modal>

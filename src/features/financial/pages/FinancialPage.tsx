@@ -98,13 +98,13 @@ const PaymentMethodDistribution: React.FC<PaymentMethodDistributionProps> = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex justify-between items-center text-sm">
-        <div className="flex items-center space-x-2">
-          <Icon name={icon} className="w-5 h-5 text-slate-400" />
-          <span className="text-slate-300 font-medium">{method}</span>
-          <span className="text-slate-500">{percentage}% do total</span>
+      <div className="flex justify-between items-center text-sm gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <Icon name={icon} className="w-5 h-5 text-slate-400 flex-shrink-0" />
+          <span className="text-slate-300 font-medium truncate">{method}</span>
+          <span className="text-slate-500 text-xs">{percentage}% do total</span>
         </div>
-        <span className="font-bold text-slate-100">{amount}</span>
+        <span className="font-bold text-slate-100 flex-shrink-0">{amount}</span>
       </div>
       <div className="w-full bg-slate-700 rounded-full h-1.5">
         {hasSplit ? (
@@ -364,7 +364,7 @@ export const FinancialPage: React.FC = () => {
 
   const paymentDistribution = [
     ...(cardTotal > 0 ? [{
-      method: 'Cartão Crédito / Débito',
+      method: 'Cartão',
       amount: cardTotal,
       percentage: cardPercentage,
       creditPercentage: cardCreditPercentage,

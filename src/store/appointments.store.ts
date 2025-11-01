@@ -314,53 +314,94 @@ export const useAppointmentsStore = create<AppointmentsState>((set, get) => ({
       // Atualiza o status
       await get().updateAppointment(id, { status });
 
-      // Se status muda para COMPLETED e há preço, cria auto-transação
-      if (status === AppointmentStatus.Completed && appointment.price && appointment.price > 0) {
+      // Se status muda para COMPLETED, atualiza dados do cliente e cria transação
+      if (status === AppointmentStatus.Completed) {
         try {
-          // Import dinâmico do financial store para evitar circular dependency
-          const { useFinancialStore } = await import('./financial.store');
-          const financialStore = useFinancialStore.getState();
-
-          // Usa data/hora do próprio agendamento quando possível
-          const dateStr = appointment.date;
-          const timeStr = appointment.startTime;
-          const category = appointment.services.length > 0 ? appointment.services.join(' + ') : 'Serviços';
-
-          // Tenta inferir método de pagamento a partir da store da barbearia
-          let paymentMethod = 'Não informado';
-          try {
-            const { useBarbershopStore } = await import('./barbershop.store');
-            const barbershopState = useBarbershopStore.getState();
-            const defaultPaymentMethod = barbershopState.shopInfo?.defaultPaymentMethod;
-            const primaryMethod = barbershopState.paymentMethods?.[0];
-            paymentMethod = defaultPaymentMethod || primaryMethod || paymentMethod;
-          } catch (barbershopError) {
-            console.warn('Aviso: não foi possível inferir método de pagamento padrão', barbershopError);
-          }
-
-          // Evita duplicar transações do mesmo agendamento
-          const existing = financialStore.transactions.find(
-            (transaction) =>
-              transaction.referenceId === appointment.id &&
-              transaction.referenceType === 'appointment'
+          // 1. Atualiza estatísticas do cliente
+          const { useClientsStore } = await import('./clients.store');
+          const clientsStore = useClientsStore.getState();
+          
+          // Busca cliente por telefone (identificador único mais confiável)
+          const existingClient = clientsStore.clients.find(
+            (c) => c.phone === appointment.clientPhone
           );
 
-          if (!existing) {
-            await financialStore.createTransaction({
-              type: TransactionType.Income,
-              description: `${appointment.clientName} - ${category}`,
-              category,
-              amount: appointment.price,
-              date: dateStr,
-              time: timeStr,
-              paymentMethod,
-              referenceId: appointment.id,
-              referenceType: 'appointment'
+          if (existingClient) {
+            // Cliente já existe: atualiza estatísticas
+            const newVisits = existingClient.visits + 1;
+            const newSpent = existingClient.spent + (appointment.price || 0);
+            const lastVisit = appointment.date;
+
+            await clientsStore.updateClient(existingClient.id, {
+              visits: newVisits,
+              spent: newSpent,
+              lastVisit,
+            });
+          } else {
+            // Cliente não existe: cria novo registro
+            await clientsStore.createClient({
+              name: appointment.clientName,
+              phone: appointment.clientPhone,
+              email: `${appointment.clientPhone.replace(/\D/g, '')}@temp.com`, // Email temporário
+              notes: '', // Notas vazias
+              visits: 1,
+              spent: appointment.price || 0,
+              lastVisit: appointment.date,
+              rating: 5, // Rating padrão
             });
           }
-        } catch (err) {
-          // Log do erro mas não falha a operação principal
-          console.warn('Aviso: Erro ao criar auto-transação:', err);
+        } catch (clientError) {
+          console.warn('Aviso: Erro ao atualizar cliente:', clientError);
+        }
+
+        // 2. Cria transação financeira se há preço
+        if (appointment.price && appointment.price > 0) {
+          try {
+            // Import dinâmico do financial store para evitar circular dependency
+            const { useFinancialStore } = await import('./financial.store');
+            const financialStore = useFinancialStore.getState();
+
+            // Usa data/hora do próprio agendamento quando possível
+            const dateStr = appointment.date;
+            const timeStr = appointment.startTime;
+            const category = appointment.services.length > 0 ? appointment.services.join(' + ') : 'Serviços';
+
+            // Tenta inferir método de pagamento a partir da store da barbearia
+            let paymentMethod = 'Não informado';
+            try {
+              const { useBarbershopStore } = await import('./barbershop.store');
+              const barbershopState = useBarbershopStore.getState();
+              const defaultPaymentMethod = barbershopState.shopInfo?.defaultPaymentMethod;
+              const primaryMethod = barbershopState.paymentMethods?.[0];
+              paymentMethod = defaultPaymentMethod || primaryMethod || paymentMethod;
+            } catch (barbershopError) {
+              console.warn('Aviso: não foi possível inferir método de pagamento padrão', barbershopError);
+            }
+
+            // Evita duplicar transações do mesmo agendamento
+            const existing = financialStore.transactions.find(
+              (transaction) =>
+                transaction.referenceId === appointment.id &&
+                transaction.referenceType === 'appointment'
+            );
+
+            if (!existing) {
+              await financialStore.createTransaction({
+                type: TransactionType.Income,
+                description: `${appointment.clientName} - ${category}`,
+                category,
+                amount: appointment.price,
+                date: dateStr,
+                time: timeStr,
+                paymentMethod,
+                referenceId: appointment.id,
+                referenceType: 'appointment'
+              });
+            }
+          } catch (err) {
+            // Log do erro mas não falha a operação principal
+            console.warn('Aviso: Erro ao criar auto-transação:', err);
+          }
         }
       }
     } catch (error) {
