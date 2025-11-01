@@ -32,6 +32,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { Modal } from '@/components/Modal';
+import { StatusSelector } from '@/components/StatusSelector';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useClients } from '@/hooks/useClients';
 import { useFinancial } from '@/hooks/useFinancial';
@@ -105,28 +106,21 @@ interface UpcomingAppointmentItemProps {
   onEdit: (appointment: Appointment) => void;
   onRemove: (appointment: Appointment) => void;
   onComplete: (appointment: Appointment) => void;
+  onStatusChange: (appointment: Appointment, newStatus: AppointmentStatus) => void;
 }
 
 const UpcomingAppointmentItem: React.FC<UpcomingAppointmentItemProps> = ({
   appointment,
   onEdit,
   onRemove,
-  onComplete
+  onComplete,
+  onStatusChange
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const priceLabel = appointment.price
     ? `R$ ${appointment.price.toFixed(2)}`
     : '--';
-
-  const statusColor =
-    appointment.status === AppointmentStatus.Confirmed
-      ? 'bg-violet-500/20 text-violet-400'
-      : appointment.status === AppointmentStatus.Pending
-      ? 'bg-yellow-500/20 text-yellow-400'
-      : appointment.status === AppointmentStatus.Cancelled
-      ? 'bg-red-500/20 text-red-400'
-      : 'bg-green-500/20 text-green-400';
 
   const dateFormatted = new Date(appointment.date + 'T00:00:00').toLocaleDateString('pt-BR', {
     day: '2-digit',
@@ -139,9 +133,10 @@ const UpcomingAppointmentItem: React.FC<UpcomingAppointmentItemProps> = ({
         <div className="flex-1">
           <div className="flex items-center space-x-2 mb-1">
             <p className="font-bold text-slate-100">{appointment.clientName}</p>
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusColor}`}>
-              {appointment.status}
-            </span>
+            <StatusSelector
+              currentStatus={appointment.status}
+              onStatusChange={(newStatus) => onStatusChange(appointment, newStatus)}
+            />
           </div>
           <p className="text-sm text-slate-300">{appointment.services.join(' + ')}</p>
         </div>
@@ -631,6 +626,16 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
+  const handleStatusChange = async (appointment: Appointment, newStatus: AppointmentStatus) => {
+    try {
+      await updateStatus(appointment.id, newStatus);
+      await fetchUpcoming();
+      success(`Status alterado para ${newStatus} com sucesso!`);
+    } catch (err) {
+      showError('Erro ao alterar status do agendamento');
+    }
+  };
+
   const handleCreateAppointmentClick = () => {
     setSelectedAppointment(null);
     openModal('newAppointment');
@@ -741,6 +746,7 @@ export const DashboardPage: React.FC = () => {
                     onEdit={handleEditClick}
                     onRemove={handleRemoveClick}
                     onComplete={handleCompleteClick}
+                    onStatusChange={handleStatusChange}
                   />
                 ))}
               </div>
