@@ -30,7 +30,7 @@
  * - Filtros múltiplos
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { Modal } from '@/components/Modal';
@@ -41,11 +41,7 @@ import { CreateClientData, UpdateClientData } from '@/store/clients.store';
 import { formatPhone } from '@/lib/validations';
 import { ClientStatusSelector } from '@/features/clients/components/ClientStatusSelector';
 
-// ===== Sub-Components =====
 
-/**
- * StatCard - Card de estatística simples
- */
 interface StatCardProps {
   icon: string;
   title: string;
@@ -64,9 +60,6 @@ const StatCard: React.FC<StatCardProps> = ({ icon, title, value }) => (
   </Card>
 );
 
-/**
- * ClientCard - Card de cliente com menu de ações
- */
 interface ClientCardProps {
   client: Client;
   onEdit: (client: Client) => void;
@@ -74,6 +67,7 @@ interface ClientCardProps {
   onStatusChange: (id: string, status: ClientStatus) => void;
   onToggleVip: (id: string, isVip: boolean) => void;
 }
+
 
 const formatDisplayName = (fullName: string) => {
   if (!fullName) return 'Cliente';
@@ -492,7 +486,6 @@ export const ClientsPage: React.FC = () => {
     clients,
     loading,
     searchClients,
-    filterByStatus,
     getStats,
     deleteClient,
     updateStatus,
@@ -503,8 +496,44 @@ export const ClientsPage: React.FC = () => {
   
   // Estado local
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<ClientStatus | 'all'>('all');
+  type ClientFilter = 'all' | 'active' | 'vip' | 'inactive';
+
+  const [filterStatus, setFilterStatus] = useState<ClientFilter>('all');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const filterMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const filterOptions = useMemo(
+    () => [
+      { key: 'all' as ClientFilter, label: 'Todos' },
+      { key: 'active' as ClientFilter, label: 'Clientes Ativos (inclui VIPs)' },
+      { key: 'vip' as ClientFilter, label: 'Clientes VIP' },
+      { key: 'inactive' as ClientFilter, label: 'Clientes Inativos' },
+    ],
+    []
+  );
+
+  const currentFilterLabel = useMemo(() => {
+    return filterOptions.find((option) => option.key === filterStatus)?.label ?? 'Todos';
+  }, [filterOptions, filterStatus]);
+
+  const isFiltered = filterStatus !== 'all';
+
+  useEffect(() => {
+    if (!filterMenuOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
+        setFilterMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [filterMenuOpen]);
 
   // Estatísticas
   const stats = getStats();
@@ -520,11 +549,30 @@ export const ClientsPage: React.FC = () => {
     }
 
     // Filtro por status
-    if (filterStatus !== 'all') {
-      result = result.filter(c => c.status === filterStatus);
+    if (filterStatus === 'active') {
+      result = result.filter(c => c.status === ClientStatus.Active);
+    } else if (filterStatus === 'vip') {
+      result = result.filter(c => c.isVip);
+    } else if (filterStatus === 'inactive') {
+      result = result.filter(c => c.status === ClientStatus.Inactive);
     }
 
-    return result;
+    const sorted = [...result];
+
+    sorted.sort((a, b) => {
+      if (a.isVip && !b.isVip) return -1;
+      if (!a.isVip && b.isVip) return 1;
+
+      const aInactive = a.status === ClientStatus.Inactive;
+      const bInactive = b.status === ClientStatus.Inactive;
+
+      if (aInactive && !bInactive) return 1;
+      if (!aInactive && bInactive) return -1;
+
+      return a.name.localeCompare(b.name);
+    });
+
+    return sorted;
   }, [clients, searchQuery, filterStatus, searchClients]);
 
   // Handlers
@@ -532,6 +580,15 @@ export const ClientsPage: React.FC = () => {
     setSelectedClient(null);
     openModal('newClient');
   };
+
+  const handleFilterToggle = useCallback(() => {
+    setFilterMenuOpen((prev) => !prev);
+  }, []);
+
+  const handleFilterSelect = useCallback((option: ClientFilter) => {
+    setFilterStatus(option);
+    setFilterMenuOpen(false);
+  }, []);
 
   const handleEditClient = (client: Client) => {
     setSelectedClient(client);
@@ -604,40 +661,6 @@ export const ClientsPage: React.FC = () => {
           />
         </div>
 
-        {/* Filtro de Status */}
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setFilterStatus('all')}
-            className={`flex-1 py-2 rounded-lg font-semibold transition-colors ${
-              filterStatus === 'all'
-                ? 'bg-violet-600 text-white'
-                : 'bg-slate-800/50 border border-slate-700 text-slate-300'
-            }`}
-          >
-            Todos
-          </button>
-          <button
-            onClick={() => setFilterStatus(ClientStatus.Active)}
-            className={`flex-1 py-2 rounded-lg font-semibold transition-colors ${
-              filterStatus === ClientStatus.Active
-                ? 'bg-violet-600 text-white'
-                : 'bg-slate-800/50 border border-slate-700 text-slate-300'
-            }`}
-          >
-            Ativos
-          </button>
-          <button
-            onClick={() => setFilterStatus(ClientStatus.Inactive)}
-            className={`flex-1 py-2 rounded-lg font-semibold transition-colors ${
-              filterStatus === ClientStatus.Inactive
-                ? 'bg-violet-600 text-white'
-                : 'bg-slate-800/50 border border-slate-700 text-slate-300'
-            }`}
-          >
-            Inativos
-          </button>
-        </div>
-
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-3">
           <StatCard icon="users" title="Total de Clientes" value={stats.total.toString()} />
@@ -652,13 +675,59 @@ export const ClientsPage: React.FC = () => {
 
         {/* Lista de Clientes */}
         <Card>
-          <h3 className="font-bold text-slate-100 mb-2 flex items-center">
-            <Icon name="users" className="w-5 h-5 mr-2 text-violet-400" />
-            Lista de Clientes
-          </h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-bold text-slate-100 flex items-center">
+              <Icon name="users" className="w-5 h-5 mr-2 text-violet-400" />
+              Lista de Clientes
+            </h3>
+            <div ref={filterMenuRef} className="relative">
+              <button
+                type="button"
+                onClick={handleFilterToggle}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-700 text-sm text-slate-200 transition-colors ${
+                  isFiltered ? 'bg-violet-600/10 border-violet-500 text-violet-200' : 'bg-slate-800'
+                }`}
+                aria-haspopup="true"
+                aria-expanded={filterMenuOpen}
+                aria-label="Filtrar clientes"
+              >
+                <Icon name="filter" className="w-4 h-4" />
+                {isFiltered && (
+                  <span className="text-xs font-medium">
+                    {filterStatus === 'vip' ? 'VIP' : filterStatus === 'active' ? 'Ativos' : 'Inativos'}
+                  </span>
+                )}
+              </button>
+
+              {filterMenuOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-20 overflow-hidden">
+                  {filterOptions.map((option, index) => {
+                    const isActive = filterStatus === option.key;
+                    const isFirst = index === 0;
+                    const isLast = index === filterOptions.length - 1;
+                    return (
+                      <button
+                        key={option.key}
+                        type="button"
+                        onClick={() => handleFilterSelect(option.key)}
+                        className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
+                          isActive ? 'bg-slate-700 text-white' : 'text-slate-300 hover:bg-slate-800'
+                        } ${isFirst ? 'rounded-t-lg' : ''} ${isLast ? 'rounded-b-lg' : ''}`}
+                      >
+                        <span className="flex-1 text-left pr-3">{option.label}</span>
+                        {isActive && <Icon name="check" className="w-4 h-4 text-violet-300" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
           <p className="text-sm text-slate-400 mb-4">
             {filteredClients.length} cliente{filteredClients.length !== 1 ? 's' : ''} encontrado
             {filteredClients.length !== 1 ? 's' : ''}
+            {isFiltered && ` • ${currentFilterLabel}`}
           </p>
 
           {loading ? (
