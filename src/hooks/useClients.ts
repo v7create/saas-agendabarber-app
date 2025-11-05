@@ -68,6 +68,7 @@ export function useClients(options: UseClientsOptions = {}) {
   const updateClient = useClientsStore((state) => state.updateClient);
   const deleteClient = useClientsStore((state) => state.deleteClient);
   const updateStatus = useClientsStore((state) => state.updateStatus);
+  const toggleVip = useClientsStore((state) => state.toggleVip);
   const clearError = useClientsStore((state) => state.clearError);
 
   // Auto-fetch ao montar
@@ -205,6 +206,7 @@ export function useClients(options: UseClientsOptions = {}) {
     updateClient,
     deleteClient,
     updateStatus,
+    toggleVip,
     clearError,
 
     // Helpers

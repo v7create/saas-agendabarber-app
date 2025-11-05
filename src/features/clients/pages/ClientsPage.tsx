@@ -39,6 +39,7 @@ import { useUI } from '@/hooks/useUI';
 import { Client, ClientStatus } from '@/types';
 import { CreateClientData, UpdateClientData } from '@/store/clients.store';
 import { formatPhone } from '@/lib/validations';
+import { ClientStatusSelector } from '@/features/clients/components/ClientStatusSelector';
 
 // ===== Sub-Components =====
 
@@ -70,6 +71,8 @@ interface ClientCardProps {
   client: Client;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
+  onStatusChange: (id: string, status: ClientStatus) => void;
+  onToggleVip: (id: string, isVip: boolean) => void;
 }
 
 const formatDisplayName = (fullName: string) => {
@@ -112,7 +115,7 @@ const buildWhatsAppLink = (phone?: string | null) => {
   return `https://wa.me/${withCountry}`;
 };
 
-const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => {
+const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete, onStatusChange, onToggleVip }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -156,6 +159,16 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => 
     window.open(whatsappLink, '_blank', 'noopener,noreferrer');
   }, [whatsappLink]);
 
+  const handleStatusChange = useCallback((newStatus: ClientStatus) => {
+    onStatusChange(client.id, newStatus);
+  }, [client.id, onStatusChange]);
+
+  const handleToggleVip = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    setMenuOpen(false);
+    onToggleVip(client.id, !client.isVip);
+  }, [client.id, client.isVip, onToggleVip]);
+
   return (
     <Card className="relative !p-4" data-testid="client-card">
       <div className="flex items-start">
@@ -173,7 +186,15 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => 
             </div>
             <div className="flex-1 space-y-2">
               <div>
-                <p className="text-base font-semibold text-slate-100">{displayName}</p>
+                <div className="flex items-center space-x-2">
+                  <p className="text-base font-semibold text-slate-100">{displayName}</p>
+                  {client.isVip && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400">
+                      <Icon name="star-fill" className="w-3 h-3 mr-1" />
+                      VIP
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center space-x-2 text-sm text-slate-400">
                   <span>{client.phone}</span>
                   {whatsappLink && (
@@ -207,15 +228,10 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => 
         </div>
 
         <div className="ml-3 flex flex-col items-end space-y-2" onClick={(event) => event.stopPropagation()}>
-          <span
-            className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-              client.status === ClientStatus.Active
-                ? 'bg-violet-500/20 text-violet-400'
-                : 'bg-slate-600 text-slate-300'
-            }`}
-          >
-            {client.status}
-          </span>
+          <ClientStatusSelector
+            currentStatus={client.status}
+            onStatusChange={handleStatusChange}
+          />
           <div className="relative">
             <button
               type="button"
@@ -236,6 +252,16 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => 
                 >
                   <Icon name="edit" className="w-4 h-4 mr-2" />
                   Editar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleToggleVip}
+                  className={`w-full flex items-center px-4 py-2 text-sm hover:bg-slate-700 ${
+                    client.isVip ? 'text-amber-400' : 'text-slate-200'
+                  }`}
+                >
+                  <Icon name={client.isVip ? 'star-fill' : 'star'} className="w-4 h-4 mr-2" />
+                  {client.isVip ? 'Remover VIP' : 'Tornar VIP'}
                 </button>
                 <button
                   type="button"
@@ -468,7 +494,9 @@ export const ClientsPage: React.FC = () => {
     searchClients,
     filterByStatus,
     getStats,
-    deleteClient
+    deleteClient,
+    updateStatus,
+    toggleVip,
   } = useClients({ autoFetch: true });
   
   const { openModal, closeModal, isModalOpen, success, error: showError } = useUI();
@@ -480,7 +508,7 @@ export const ClientsPage: React.FC = () => {
 
   // Estatísticas
   const stats = getStats();
-  const vipClients = clients.filter(c => c.spent >= 1000).length;
+  const vipClients = clients.filter(c => c.isVip).length;
 
   // Filtros aplicados
   const filteredClients = useMemo(() => {
@@ -646,6 +674,8 @@ export const ClientsPage: React.FC = () => {
                   client={client}
                   onEdit={handleEditClient}
                   onDelete={handleDeleteClick}
+                  onStatusChange={updateStatus}
+                  onToggleVip={toggleVip}
                 />
               ))}
             </div>

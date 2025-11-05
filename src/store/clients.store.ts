@@ -39,12 +39,13 @@ import { orderBy } from 'firebase/firestore';
 const clientsService = new BaseService<Client>('clients');
 
 // Tipos para criação/atualização (sem ID)
-export type CreateClientData = Omit<Client, 'id' | 'visits' | 'spent' | 'lastVisit' | 'avatarInitials' | 'status'> & {
+export type CreateClientData = Omit<Client, 'id' | 'visits' | 'spent' | 'lastVisit' | 'avatarInitials' | 'status' | 'isVip'> & {
   visits?: number;
   spent?: number;
   lastVisit?: string;
   avatarInitials?: string; // Opcional - será gerado se não fornecido
   status?: ClientStatus; // Opcional - default Active
+  isVip?: boolean; // Opcional - default false
 };
 export type UpdateClientData = Partial<Omit<Client, 'id'>>;
 
@@ -60,6 +61,7 @@ interface ClientsState {
   updateClient: (id: string, data: UpdateClientData) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
   updateStatus: (id: string, status: ClientStatus) => Promise<void>;
+  toggleVip: (id: string, isVip: boolean) => Promise<void>;
 
   // Ações de controle
   setLoading: (loading: boolean) => void;
@@ -134,6 +136,7 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
         spent: data.spent || 0,
         lastVisit: data.lastVisit || '',
         status: data.status || ClientStatus.Active,
+        isVip: data.isVip || false,
       });
       
       // Atualiza estado local
@@ -145,6 +148,7 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
         spent: data.spent || 0,
         lastVisit: data.lastVisit || '',
         status: data.status || ClientStatus.Active,
+        isVip: data.isVip || false,
       };
       
       set((state) => ({ 
@@ -262,6 +266,15 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
   updateStatus: async (id: string, status: ClientStatus) => {
     try {
       await get().updateClient(id, { status });
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Atualiza apenas o VIP (helper convenience)
+  toggleVip: async (id: string, isVip: boolean) => {
+    try {
+      await get().updateClient(id, { isVip });
     } catch (error) {
       throw error;
     }

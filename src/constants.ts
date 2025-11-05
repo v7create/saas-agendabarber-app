@@ -101,11 +101,11 @@ export const MOCK_APPOINTMENTS: Appointment[] = [
 ];
 
 export const MOCK_CLIENTS: Client[] = [
-    { id: '1', name: 'João Silva', avatarInitials: 'JS', status: ClientStatus.Active, phone: '(11) 99999-9999', email: 'joao.silva@email.com', lastVisit: '24/09/2024', visits: 15, spent: 975, notes: 'Cliente fiel, prefere corte baixo nas laterais' },
-    { id: '2', name: 'Pedro Santos', avatarInitials: 'PS', status: ClientStatus.Active, phone: '(11) 88888-8888', email: 'pedro.santos@email.com', lastVisit: '10/09/2024', visits: 8, spent: 320, notes: 'Gosta de conversar sobre futebol.' },
-    { id: '3', name: 'Carlos Lima', avatarInitials: 'CL', status: ClientStatus.Active, phone: '(11) 77777-7777', email: 'carlos.lima@email.com', lastVisit: '22/09/2024', visits: 3, spent: 150, notes: 'Cliente novo, veio por indicação.' },
-    { id: '4', name: 'Roberto Costa', avatarInitials: 'RC', status: ClientStatus.Inactive, phone: '(11) 66666-6666', email: 'roberto.costa@email.com', lastVisit: '05/03/2024', visits: 12, spent: 850, notes: '' },
-    { id: '5', name: 'VIP Cliente', avatarInitials: 'VC', status: ClientStatus.Active, phone: '(11) 11111-1111', email: 'vip@email.com', lastVisit: '26/09/2024', visits: 25, spent: 2500, notes: 'Cliente VIP. Oferecer café.' },
+    { id: '1', name: 'João Silva', avatarInitials: 'JS', status: ClientStatus.Active, phone: '(11) 99999-9999', email: 'joao.silva@email.com', lastVisit: '24/09/2024', visits: 15, spent: 975, notes: 'Cliente fiel, prefere corte baixo nas laterais', isVip: false },
+    { id: '2', name: 'Pedro Santos', avatarInitials: 'PS', status: ClientStatus.Active, phone: '(11) 88888-8888', email: 'pedro.santos@email.com', lastVisit: '10/09/2024', visits: 8, spent: 320, notes: 'Gosta de conversar sobre futebol.', isVip: false },
+    { id: '3', name: 'Carlos Lima', avatarInitials: 'CL', status: ClientStatus.Active, phone: '(11) 77777-7777', email: 'carlos.lima@email.com', lastVisit: '22/09/2024', visits: 3, spent: 150, notes: 'Cliente novo, veio por indicação.', isVip: false },
+    { id: '4', name: 'Roberto Costa', avatarInitials: 'RC', status: ClientStatus.Inactive, phone: '(11) 66666-6666', email: 'roberto.costa@email.com', lastVisit: '05/03/2024', visits: 12, spent: 850, notes: '', isVip: false },
+    { id: '5', name: 'VIP Cliente', avatarInitials: 'VC', status: ClientStatus.Active, phone: '(11) 11111-1111', email: 'vip@email.com', lastVisit: '26/09/2024', visits: 25, spent: 2500, notes: 'Cliente VIP. Oferecer café.', isVip: true },
 ];
 
 export const MOCK_TRANSACTIONS: Transaction[] = [
