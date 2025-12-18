@@ -167,7 +167,7 @@ export const BookingPage: React.FC = () => {
     }
 
     // Redireciona para WhatsApp
-    window.open(generateWhatsAppLink(), '_blank');
+    window.open(generateWhatsAppLink(), '_blank', 'noopener,noreferrer');
   };
 
   return (
