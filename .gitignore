@@ -48,3 +48,6 @@ playwright/.cache/
 # Build
 build
 .cache
+
+.gemini/
+gha-creds-*.json

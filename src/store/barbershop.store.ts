@@ -37,15 +37,24 @@ import { db } from '@/firebase';
 import { useAuthStore } from './auth.store';
 
 // Estrutura de configurações
+export interface DaySchedule {
+  dayOfWeek: number;
+  isOpen: boolean;
+  startTime: string;
+  endTime: string;
+  hasLunchBreak: boolean;
+  lunchStart: string;
+  lunchDuration: number;
+}
+
 export interface BarbershopSettings {
   // Profissionais
   barbers: Barber[];
   
-  // Horário de funcionamento
+  // Horário de funcionamento (agora detalhado por dia)
   businessHours: {
-    opening: string; // HH:MM
-    closing: string; // HH:MM
-    daysOfWeek: number[]; // 0-6 (Domingo-Sábado)
+    // Mantendo retrocompatibilidade opcional ou migrando estrutura
+    schedule: DaySchedule[]; 
   };
   
   // Métodos de pagamento
@@ -72,12 +81,20 @@ export interface BarbershopSettings {
 }
 
 // Valores padrão
+const defaultSchedule: DaySchedule[] = [
+  { dayOfWeek: 0, isOpen: false, startTime: '09:00', endTime: '13:00', hasLunchBreak: false, lunchStart: '12:00', lunchDuration: 60 }, // Domingo
+  { dayOfWeek: 1, isOpen: true, startTime: '09:00', endTime: '19:00', hasLunchBreak: true, lunchStart: '12:00', lunchDuration: 60 }, // Segunda
+  { dayOfWeek: 2, isOpen: true, startTime: '09:00', endTime: '19:00', hasLunchBreak: true, lunchStart: '12:00', lunchDuration: 60 }, // Terça
+  { dayOfWeek: 3, isOpen: true, startTime: '09:00', endTime: '19:00', hasLunchBreak: true, lunchStart: '12:00', lunchDuration: 60 }, // Quarta
+  { dayOfWeek: 4, isOpen: true, startTime: '09:00', endTime: '19:00', hasLunchBreak: true, lunchStart: '12:00', lunchDuration: 60 }, // Quinta
+  { dayOfWeek: 5, isOpen: true, startTime: '09:00', endTime: '19:00', hasLunchBreak: true, lunchStart: '12:00', lunchDuration: 60 }, // Sexta
+  { dayOfWeek: 6, isOpen: true, startTime: '09:00', endTime: '18:00', hasLunchBreak: false, lunchStart: '12:00', lunchDuration: 60 }, // Sábado
+];
+
 const defaultSettings: BarbershopSettings = {
   barbers: [],
   businessHours: {
-    opening: '09:00',
-    closing: '18:00',
-    daysOfWeek: [1, 2, 3, 4, 5, 6], // Segunda a Sábado
+    schedule: defaultSchedule
   },
   paymentMethods: ['Dinheiro', 'Cartão', 'Pix'],
   shopInfo: {
@@ -268,17 +285,13 @@ export const useBarbershopStore = create<BarbershopState>((set, get) => ({
   updateBusinessHours: async (hours: Partial<BarbershopSettings['businessHours']>) => {
     set({ loading: true, error: null });
     try {
-      const updatedHours = {
+      const updatedBusinessHours = {
         ...get().businessHours,
         ...hours,
       };
-
-      // Validações
-      if (updatedHours.opening >= updatedHours.closing) {
-        throw new Error('Horário de abertura deve ser antes do fechamento');
-      }
-
-      await get().updateSettings({ businessHours: updatedHours });
+      
+      // Persistir no Firestore (o merge do setDoc cuidará de atualizar apenas o campo businessHours)
+      await get().updateSettings({ businessHours: updatedBusinessHours });
     } catch (err) {
       console.error('Erro ao atualizar horário:', err);
       const message = err instanceof Error ? err.message : 'Erro ao atualizar horário';

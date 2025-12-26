@@ -19,8 +19,10 @@ import {
   signOut,
   sendPasswordResetEmail,
   updateProfile,
+  deleteUser,
 } from 'firebase/auth';
-import { auth, googleProvider } from '@/firebase';
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { auth, googleProvider, db } from '@/firebase';
 import { useAuthStore } from '@/store/auth.store';
 import { loginSchema, registerSchema } from '@/lib/validations';
 import type { z } from 'zod';
@@ -144,6 +146,67 @@ export function useAuth() {
     }
   }, [setLoading, setError, clearError]);
 
+  /**
+   * Deletar conta permanentemente
+   */
+  const deleteAccount = useCallback(async () => {
+    try {
+      setLoading(true);
+      clearError();
+
+      if (!auth.currentUser) throw new Error('Usuário não autenticado');
+
+      // Tenta deletar o documento principal da barbearia (se as regras permitirem)
+      try {
+        await deleteDoc(doc(db, 'barbershops', auth.currentUser.uid));
+      } catch (e) {
+        console.error('Erro ao limpar dados do Firestore:', e);
+        // Continua mesmo se falhar no Firestore, o principal é Auth
+      }
+
+      await deleteUser(auth.currentUser);
+      logoutStore();
+      window.location.reload();
+    } catch (err: any) {
+      // Se precisar de re-login, repassa o erro para UI tratar
+      if (err.code === 'auth/requires-recent-login') {
+        throw err;
+      }
+      const errorMessage = getErrorMessage(err.code);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, setError, clearError, logoutStore]);
+
+  /**
+   * Desativar conta temporariamente
+   */
+  const deactivateAccount = useCallback(async () => {
+    try {
+      setLoading(true);
+      clearError();
+
+      if (!auth.currentUser) throw new Error('Usuário não autenticado');
+
+      await updateDoc(doc(db, 'barbershops', auth.currentUser.uid), {
+        active: false,
+        deactivatedAt: new Date().toISOString(),
+      });
+
+      await signOut(auth);
+      logoutStore();
+      window.location.reload();
+    } catch (err: any) {
+      const errorMessage = getErrorMessage(err.code);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, setError, clearError, logoutStore]);
+
   return {
     // Estado
     user,
@@ -157,6 +220,8 @@ export function useAuth() {
     register,
     logout,
     resetPassword,
+    deleteAccount,
+    deactivateAccount,
     clearError,
   };
 }

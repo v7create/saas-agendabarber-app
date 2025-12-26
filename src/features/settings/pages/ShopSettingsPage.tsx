@@ -30,6 +30,17 @@ import { Modal } from '@/components/Modal';
 import { useBarbershop } from '@/hooks/useBarbershop';
 import { useUI } from '@/hooks/useUI';
 import { Barber } from '@/types';
+import { ProfessionalFormModal } from '../components/ProfessionalFormModal';
+import { BusinessHoursModal } from '../components/BusinessHoursModal';
+
+// Helper para somar minutos a um horário HH:MM
+const addMinutes = (time: string, minutes: number): string => {
+  const [h, m] = time.split(':').map(Number);
+  const date = new Date();
+  date.setHours(h, m, 0, 0);
+  date.setMinutes(date.getMinutes() + minutes);
+  return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+};
 
 // ===== Sub-Components =====
 
@@ -91,96 +102,6 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ enabled, onChange }) => (
   </button>
 );
 
-/**
- * ProfessionalForm - Formulário para criar/editar profissional
- */
-interface ProfessionalFormProps {
-  onClose: () => void;
-  editingBarber?: Barber | null;
-}
-
-const ProfessionalForm: React.FC<ProfessionalFormProps> = ({ onClose, editingBarber }) => {
-  const { addBarber, updateBarber } = useBarbershop();
-  const { success, error: showError } = useUI();
-
-  const [name, setName] = useState(editingBarber?.name || '');
-  const [avatarUrl, setAvatarUrl] = useState(editingBarber?.avatarUrl || '');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!name.trim()) {
-      showError('Digite o nome do profissional');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      if (editingBarber) {
-        await updateBarber(editingBarber.id, {
-          name: name.trim(),
-          avatarUrl: avatarUrl.trim() || undefined
-        });
-        success('Profissional atualizado com sucesso!');
-      } else {
-        const createData: Omit<Barber, 'id'> = {
-          name: name.trim(),
-          avatarUrl: avatarUrl.trim() || undefined
-        };
-        await addBarber(createData);
-        success('Profissional adicionado com sucesso!');
-      }
-      onClose();
-    } catch (err) {
-      showError('Erro ao salvar profissional');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className="text-sm font-medium text-slate-400">Nome *</label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Nome do profissional"
-          className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium text-slate-400">URL do Avatar (opcional)</label>
-        <input
-          type="url"
-          value={avatarUrl}
-          onChange={(e) => setAvatarUrl(e.target.value)}
-          placeholder="https://exemplo.com/avatar.jpg"
-          className="mt-1 w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
-        />
-        <p className="text-xs text-slate-500 mt-1">
-          Se não fornecido, será usado um avatar padrão
-        </p>
-      </div>
-      <div className="flex space-x-3 pt-4">
-        <button
-          onClick={onClose}
-          disabled={loading}
-          className="flex-1 bg-slate-700 text-slate-200 font-bold py-2 rounded-lg hover:bg-slate-600 disabled:bg-slate-800"
-        >
-          Cancelar
-        </button>
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="flex-1 bg-violet-600 text-white font-bold py-2 rounded-lg hover:bg-violet-700 disabled:bg-slate-500"
-        >
-          {loading ? 'Salvando...' : editingBarber ? 'Atualizar' : 'Adicionar'}
-        </button>
-      </div>
-    </div>
-  );
-};
 
 // ===== Main Component =====
 
@@ -202,6 +123,8 @@ export const ShopSettingsPage: React.FC = () => {
   // State
   const [editingBarber, setEditingBarber] = useState<Barber | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showProfessionalModal, setShowProfessionalModal] = useState(false);
+  const [showBusinessHoursModal, setShowBusinessHoursModal] = useState(false);
 
   // Payment methods state (initialized from barbershop data)
   const [localPaymentMethods, setLocalPaymentMethods] = useState({
@@ -213,12 +136,17 @@ export const ShopSettingsPage: React.FC = () => {
   // Handlers
   const handleNewProfessional = () => {
     setEditingBarber(null);
-    openModal('professionalForm');
+    setShowProfessionalModal(true);
   };
 
   const handleEditProfessional = (barber: Barber) => {
     setEditingBarber(barber);
-    openModal('professionalForm');
+    setShowProfessionalModal(true);
+  };
+
+  const handleCloseProfessionalModal = () => {
+    setShowProfessionalModal(false);
+    setEditingBarber(null);
   };
 
   const handleDeleteClick = (id: string) => {
@@ -320,35 +248,46 @@ export const ShopSettingsPage: React.FC = () => {
         <Card>
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-bold text-slate-100 text-lg">Horários de Funcionamento</h2>
-            <button className="px-3 py-1.5 text-sm font-semibold bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600">
+            <button
+              onClick={() => setShowBusinessHoursModal(true)}
+              className="px-3 py-1.5 text-sm font-semibold bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600"
+            >
               Editar
             </button>
           </div>
           <ul className="text-sm space-y-2">
-            <li className="flex justify-between">
-              <span className="text-slate-400">Segunda a Sexta:</span>
-              <span className="font-semibold text-slate-200">
-                {businessHours?.opening && businessHours?.closing
-                  ? `${businessHours.opening} - ${businessHours.closing}`
-                  : '09:00 - 19:00'}
-              </span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-slate-400">Sábado:</span>
-              <span className="font-semibold text-slate-200">
-                {businessHours?.daysOfWeek?.includes(6)
-                  ? `${businessHours.opening} - ${businessHours.closing}`
-                  : 'Fechado'}
-              </span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-slate-400">Domingo:</span>
-              <span className="font-semibold text-red-400">
-                {businessHours?.daysOfWeek?.includes(0)
-                  ? `${businessHours.opening} - ${businessHours.closing}`
-                  : 'Fechado'}
-              </span>
-            </li>
+            {['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map((dayName, index) => {
+              // Encontrar a configuração específica para este dia
+              // Se não existir schedule (dados antigos), fallback para lógica anterior ou fechado
+              const daySchedule = businessHours?.schedule?.find(d => d.dayOfWeek === index);
+              
+              // Retrocompatibilidade: Se não houver schedule, tenta usar daysOfWeek antigo ou assume fechado
+              const isOpen = daySchedule ? daySchedule.isOpen : false;
+              
+              const hours = isOpen && daySchedule
+                ? `${daySchedule.startTime} - ${daySchedule.endTime}`
+                : 'Fechado';
+                
+              const lunchInfo = isOpen && daySchedule?.hasLunchBreak
+                ? ` (Almoço: ${daySchedule.lunchStart} - ${addMinutes(daySchedule.lunchStart, daySchedule.lunchDuration)})`
+                : '';
+              
+              return (
+                <li key={index} className="flex flex-col border-b border-slate-800/50 last:border-0 pb-2 last:pb-0">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">{dayName}:</span>
+                    <span className={`font-semibold ${isOpen ? 'text-slate-200' : 'text-red-400'}`}>
+                      {hours}
+                    </span>
+                  </div>
+                  {lunchInfo && (
+                    <div className="text-xs text-slate-500 text-right">
+                      {lunchInfo}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </Card>
 
@@ -378,24 +317,20 @@ export const ShopSettingsPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Modals */}
-      <Modal
-        isOpen={isModalOpen('professionalForm')}
-        onClose={() => {
-          closeModal('professionalForm');
-          setEditingBarber(null);
-        }}
-        title={editingBarber ? 'Editar Profissional' : 'Novo Profissional'}
-      >
-        <ProfessionalForm
-          onClose={() => {
-            closeModal('professionalForm');
-            setEditingBarber(null);
-          }}
-          editingBarber={editingBarber}
-        />
-      </Modal>
+      {/* Professional Modal */}
+      <ProfessionalFormModal
+        isOpen={showProfessionalModal}
+        onClose={handleCloseProfessionalModal}
+        editingBarber={editingBarber}
+      />
 
+      {/* Business Hours Modal */}
+      <BusinessHoursModal
+        isOpen={showBusinessHoursModal}
+        onClose={() => setShowBusinessHoursModal(false)}
+      />
+
+      {/* Delete Confirmation Modal */}
       <Modal
         isOpen={isModalOpen('confirmDelete')}
         onClose={() => {

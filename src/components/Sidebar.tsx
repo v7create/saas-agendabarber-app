@@ -3,7 +3,9 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { Icon } from './Icon';
-import { auth } from '../firebase';
+import { useAuth } from '@/hooks/useAuth';
+import { useBarbershop } from '@/hooks/useBarbershop';
+import { useAuthStore } from '@/store/auth.store';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -26,15 +28,32 @@ const settingsNavItems = [
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+    const { logout } = useAuth();
+    const { shopInfo } = useBarbershop({ autoFetch: true });
+    const { user } = useAuthStore();
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         onClose();
-        auth.signOut().finally(() => {
-            // Reload the page to ensure all state (including demo mode) is cleared
-            window.location.hash = '/login';
-            window.location.reload();
-        });
+        try {
+            await logout();
+        } catch (err) {
+            console.error('Erro ao sair:', err);
+        }
     };
+
+    // Helper para iniciais
+    const getInitials = (name: string) => {
+        return name
+            .split(' ')
+            .map(word => word[0])
+            .slice(0, 2)
+            .join('')
+            .toUpperCase();
+    };
+
+    const shopName = shopInfo?.name || 'Sua Barbearia';
+    const userEmail = user?.email || 'email@exemplo.com';
+    const initials = getInitials(shopName);
 
     const NavItem: React.FC<{ path: string, icon: string, label: string }> = ({ path, icon, label }) => (
         <NavLink
@@ -82,11 +101,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
                     {/* Profile */}
                      <div className="p-4 border-b border-slate-700">
-                        <div className="w-12 h-12 bg-violet-600 rounded-full flex items-center justify-center font-bold text-white text-xl mb-2">
-                            AB
+                        <div className="w-12 h-12 bg-violet-600 rounded-full flex items-center justify-center font-bold text-white text-xl mb-2 shadow-lg shadow-violet-900/20">
+                            {initials}
                         </div>
-                        <p className="font-bold text-slate-100">André Barber</p>
-                        <p className="text-sm text-slate-400">testebarber@gmail.com</p>
+                        <p className="font-bold text-slate-100 truncate">{shopName}</p>
+                        <p className="text-sm text-slate-400 truncate">{userEmail}</p>
                     </div>
 
                     {/* Navigation */}

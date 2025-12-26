@@ -31,6 +31,10 @@ import { useBarbershop } from '@/hooks/useBarbershop';
 import { useUI } from '@/hooks/useUI';
 import { useAuth } from '@/hooks/useAuth';
 import { BarbershopSetupModal } from '../components/BarbershopSetupModal';
+import { ImageUploadModal } from '../components/ImageUploadModal';
+import { EditProfileModal } from '../components/EditProfileModal';
+import { EditContactModal } from '../components/EditContactModal';
+import { EditSocialMediaModal } from '../components/EditSocialMediaModal';
 
 // Helper para determinar saudação baseado na hora
 const getGreeting = (): string => {
@@ -81,16 +85,29 @@ const SettingsItem: React.FC<SettingsItemProps> = ({ icon, label, sublabel, onCl
 
 export const ProfilePage: React.FC = () => {
   // Hooks
-  const { shopInfo, loading } = useBarbershop({ autoFetch: true });
+  const { shopInfo, loading, updateShopInfo } = useBarbershop({ autoFetch: true });
   const { user } = useAuth();
   const { openModal } = useUI();
   const [showSetupModal, setShowSetupModal] = React.useState(false);
+  const [showCoverModal, setShowCoverModal] = React.useState(false);
+  const [showLogoModal, setShowLogoModal] = React.useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = React.useState(false);
+  const [showEditContactModal, setShowEditContactModal] = React.useState(false);
+  const [showEditSocialModal, setShowEditSocialModal] = React.useState(false);
 
   // Extrair nome do usuário
   const userName = user?.displayName || user?.email?.split('@')[0] || 'Profissional';
 
   const handleEditProfile = () => {
-    openModal('editProfile');
+    setShowEditProfileModal(true);
+  };
+
+  const handleCoverSave = async (imageUrl: string | null) => {
+    await updateShopInfo({ coverImageUrl: imageUrl || '' });
+  };
+
+  const handleLogoSave = async (imageUrl: string | null) => {
+    await updateShopInfo({ logoUrl: imageUrl || '' });
   };
 
   const handleOpenLocation = () => {
@@ -105,8 +122,21 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleOpenSocialMedia = (platform: string) => {
-    console.log('Open social media:', platform);
+  const handleOpenSocialMedia = (platform: string, username?: string) => {
+    if (!username) return;
+
+    const urls: Record<string, string> = {
+      instagram: `https://instagram.com/${username.replace('@', '')}`,
+      facebook: username.includes('facebook.com')
+        ? username
+        : `https://facebook.com/${username}`,
+      website: username.startsWith('http') ? username : `https://${username}`,
+    };
+
+    const url = urls[platform];
+    if (url) {
+      window.open(url, '_blank');
+    }
   };
 
   if (loading) {
@@ -122,28 +152,40 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <>
-      {/* Greeting Banner */}
-      <div className="bg-gradient-to-r from-violet-600/20 to-violet-700/20 border-b border-violet-500/30 px-4 py-3 mb-4">
-        <p className="text-sm text-slate-300">
-          <span className="font-semibold text-violet-400">{getGreeting()}, {userName}!</span>
-        </p>
-        <p className="text-xs text-slate-500 mt-1">{user?.email}</p>
-      </div>
-
       <div className="-m-4">
         {/* Cover Image */}
-        <div className="relative h-48">
+        <div className="relative h-48 group cursor-pointer" onClick={() => setShowCoverModal(true)}>
           <img
             src={shopInfo?.coverImageUrl || 'https://images.unsplash.com/photo-1599351431202-1810c26a87c3?q=80&w=1974&auto=format&fit=crop'}
             alt="Capa da Barbearia"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
-          <img
-            src={shopInfo?.logoUrl || 'https://i.pravatar.cc/150?u=barbershop'}
-            alt="Logo da Barbearia"
-            className="absolute -bottom-12 left-4 w-24 h-24 rounded-full border-4 border-slate-900 object-cover"
-          />
+
+          {/* Edit Cover Button */}
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2 flex items-center gap-2">
+              <Icon name="camera" className="w-5 h-5 text-white" />
+              <span className="text-white font-medium">Alterar Capa</span>
+            </div>
+          </div>
+
+          {/* Logo with Edit Button */}
+          <div className="absolute -bottom-12 left-4">
+            <div className="relative group/logo cursor-pointer" onClick={(e) => {
+              e.stopPropagation();
+              setShowLogoModal(true);
+            }}>
+              <img
+                src={shopInfo?.logoUrl || 'https://i.pravatar.cc/150?u=barbershop'}
+                alt="Logo da Barbearia"
+                className="w-24 h-24 rounded-full border-4 border-slate-900 object-cover"
+              />
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/logo:opacity-100 transition-opacity rounded-full flex items-center justify-center">
+                <Icon name="camera" className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Content */}
@@ -175,9 +217,17 @@ export const ProfilePage: React.FC = () => {
           )}
 
           {/* Contact and Location */}
-          {(shopInfo?.address || shopInfo?.phone) && (
-            <Card>
-              <h2 className="font-bold text-slate-100 mb-2">Contato e Localização</h2>
+          <Card>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-bold text-slate-100">Contato e Localização</h2>
+              <button
+                onClick={() => setShowEditContactModal(true)}
+                className="text-violet-400 hover:text-violet-300 transition-colors"
+              >
+                <Icon name="edit" className="w-5 h-5" />
+              </button>
+            </div>
+            {(shopInfo?.address || shopInfo?.phone) ? (
               <div className="divide-y divide-slate-700/50">
                 {shopInfo.address && (
                   <SettingsItem
@@ -196,27 +246,40 @@ export const ProfilePage: React.FC = () => {
                   />
                 )}
               </div>
-            </Card>
-          )}
+            ) : (
+              <p className="text-slate-500 text-sm py-2">
+                Adicione informações de contato e localização
+              </p>
+            )}
+          </Card>
 
           {/* Social Media */}
-          {(shopInfo?.instagram || shopInfo?.facebook || shopInfo?.website) && (
-            <Card>
-              <h2 className="font-bold text-slate-100 mb-2">Nossas Redes</h2>
+          <Card>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-bold text-slate-100">Nossas Redes</h2>
+              <button
+                onClick={() => setShowEditSocialModal(true)}
+                className="text-violet-400 hover:text-violet-300 transition-colors"
+              >
+                <Icon name="edit" className="w-5 h-5" />
+              </button>
+            </div>
+            {(shopInfo?.instagram || shopInfo?.facebook || shopInfo?.website) ? (
               <div className="divide-y divide-slate-700/50">
                 {shopInfo.instagram && (
                   <SettingsItem
                     icon="instagram"
                     label="Instagram"
                     sublabel={`@${shopInfo.instagram}`}
-                    onClick={() => handleOpenSocialMedia('instagram')}
+                    onClick={() => handleOpenSocialMedia('instagram', shopInfo.instagram)}
                   />
                 )}
                 {shopInfo.facebook && (
                   <SettingsItem
                     icon="facebook"
                     label="Facebook"
-                    onClick={() => handleOpenSocialMedia('facebook')}
+                    sublabel={shopInfo.facebook}
+                    onClick={() => handleOpenSocialMedia('facebook', shopInfo.facebook)}
                   />
                 )}
                 {shopInfo.website && (
@@ -224,12 +287,16 @@ export const ProfilePage: React.FC = () => {
                     icon="globe"
                     label="Nosso Site"
                     sublabel={shopInfo.website}
-                    onClick={() => handleOpenSocialMedia('website')}
+                    onClick={() => handleOpenSocialMedia('website', shopInfo.website)}
                   />
                 )}
               </div>
-            </Card>
-          )}
+            ) : (
+              <p className="text-slate-500 text-sm py-2">
+                Adicione suas redes sociais
+              </p>
+            )}
+          </Card>
 
           {/* Empty State */}
           {!shopInfo?.address && !shopInfo?.phone && !shopInfo?.instagram && !shopInfo?.facebook && !shopInfo?.website && (
@@ -253,6 +320,44 @@ export const ProfilePage: React.FC = () => {
       <BarbershopSetupModal
         isOpen={showSetupModal}
         onClose={() => setShowSetupModal(false)}
+      />
+
+      {/* Cover Image Modal */}
+      <ImageUploadModal
+        isOpen={showCoverModal}
+        onClose={() => setShowCoverModal(false)}
+        onSave={handleCoverSave}
+        title="Alterar Capa"
+        currentImage={shopInfo?.coverImageUrl}
+        aspectRatio="cover"
+      />
+
+      {/* Logo Image Modal */}
+      <ImageUploadModal
+        isOpen={showLogoModal}
+        onClose={() => setShowLogoModal(false)}
+        onSave={handleLogoSave}
+        title="Alterar Logo"
+        currentImage={shopInfo?.logoUrl}
+        aspectRatio="square"
+      />
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        isOpen={showEditProfileModal}
+        onClose={() => setShowEditProfileModal(false)}
+      />
+
+      {/* Edit Contact Modal */}
+      <EditContactModal
+        isOpen={showEditContactModal}
+        onClose={() => setShowEditContactModal(false)}
+      />
+
+      {/* Edit Social Media Modal */}
+      <EditSocialMediaModal
+        isOpen={showEditSocialModal}
+        onClose={() => setShowEditSocialModal(false)}
       />
     </>
   );

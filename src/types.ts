@@ -61,15 +61,35 @@ export interface Service {
     id: string;
     name: string;
     price: number;
+    promotionalPrice?: number;
     duration: number; // in minutes
     icon?: string;
     color?: string;
+    imageUrl?: string;
+    active?: boolean; // default true if undefined
+}
+
+export interface Combo {
+    id: string;
+    name: string;
+    serviceIds: string[];
+    price: number;
+    promotionalPrice?: number;
+    duration: number; // in minutes
+    imageUrl?: string;
+    active?: boolean; // default true if undefined
 }
 
 export interface Barber {
     id: string;
     name: string;
     avatarUrl?: string;
+    servicesNotProvided?: string[]; // IDs dos serviços que NÃO realiza
+    unavailableHours?: {
+        dayOfWeek: number; // 0-6 (Domingo-Sábado)
+        startTime: string; // HH:MM
+        endTime: string; // HH:MM
+    }[];
 }
 
 export enum NotificationType {

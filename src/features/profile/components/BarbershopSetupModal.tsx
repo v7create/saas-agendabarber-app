@@ -8,8 +8,7 @@
  * - Redes sociais e website
  */
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Card } from '@/components/Card';
+import React, { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { useBarbershop } from '@/hooks/useBarbershop';
 
@@ -21,7 +20,8 @@ interface BarbershopSetupModalProps {
 interface FormData {
   name: string;
   phone: string;
-  address: string;
+  address: string; // Rua e número
+  neighborhood: string;
   city: string;
   state: string;
   instagram?: string;
@@ -30,19 +30,6 @@ interface FormData {
   website?: string;
 }
 
-// Mock de cidades brasileiras para autocomplete
-const BRAZILIAN_CITIES: { address: string; city: string; state: string }[] = [
-  { address: 'Rua Ficticia', city: 'São Paulo', state: 'SP' },
-  { address: 'Avenida Paulista', city: 'São Paulo', state: 'SP' },
-  { address: 'Rua Augusta', city: 'São Paulo', state: 'SP' },
-  { address: 'Rua Oscar Freire', city: 'São Paulo', state: 'SP' },
-  { address: 'Rua Faria Lima', city: 'São Paulo', state: 'SP' },
-  { address: 'Avenida Imigrantes', city: 'Rio de Janeiro', state: 'RJ' },
-  { address: 'Avenida Copacabana', city: 'Rio de Janeiro', state: 'RJ' },
-  { address: 'Rua Uruguaiana', city: 'Rio de Janeiro', state: 'RJ' },
-  { address: 'Rua das Flores', city: 'Belo Horizonte', state: 'MG' },
-];
-
 export const BarbershopSetupModal: React.FC<BarbershopSetupModalProps> = ({ isOpen, onClose }) => {
   const { updateShopInfo } = useBarbershop();
   const [loading, setLoading] = useState(false);
@@ -50,6 +37,7 @@ export const BarbershopSetupModal: React.FC<BarbershopSetupModalProps> = ({ isOp
     name: '',
     phone: '',
     address: '',
+    neighborhood: '',
     city: '',
     state: '',
     instagram: '',
@@ -57,51 +45,9 @@ export const BarbershopSetupModal: React.FC<BarbershopSetupModalProps> = ({ isOp
     tiktok: '',
     website: '',
   });
-  const [suggestions, setSuggestions] = useState<typeof BRAZILIAN_CITIES>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const suggestionsRef = useRef<HTMLDivElement>(null);
-
-  // Filtrar sugestões de cidades
-  const handleAddressChange = (value: string) => {
-    setFormData(prev => ({ ...prev, address: value }));
-    
-    if (value.length > 1) {
-      const filtered = BRAZILIAN_CITIES.filter(item =>
-        item.address.toLowerCase().includes(value.toLowerCase())
-      );
-      setSuggestions(filtered);
-      setShowSuggestions(true);
-    } else {
-      setSuggestions([]);
-      setShowSuggestions(false);
-    }
-  };
-
-  // Selecionar sugestão
-  const selectSuggestion = (suggestion: typeof BRAZILIAN_CITIES[0]) => {
-    setFormData(prev => ({
-      ...prev,
-      address: suggestion.address,
-      city: suggestion.city,
-      state: suggestion.state,
-    }));
-    setShowSuggestions(false);
-  };
-
-  // Fechar sugestões ao clicar fora
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   // Validar formulário
-  const isValid = formData.name && formData.phone && formData.address && formData.city && formData.state;
+  const isValid = formData.name && formData.phone && formData.address && formData.neighborhood && formData.city && formData.state;
 
   // Salvar dados
   const handleSave = async () => {
@@ -109,10 +55,18 @@ export const BarbershopSetupModal: React.FC<BarbershopSetupModalProps> = ({ isOp
 
     setLoading(true);
     try {
+      // Concatenar endereço completo para salvar no campo address do Firestore (ou ajustar store se preferir campos separados)
+      // Por enquanto, salvando como string única ou mantendo compatibilidade
+      // Idealmente o backend aceitaria campos separados, mas vamos concatenar para o 'address' principal
+      // ou atualizar o hook para aceitar campos extras. 
+      // Vendo o hook, ele aceita 'city' e 'state'. Vamos passar 'address' como Rua+Bairro
+      
+      const fullAddress = `${formData.address}, ${formData.neighborhood}`;
+
       await updateShopInfo({
         name: formData.name,
         phone: formData.phone,
-        address: formData.address,
+        address: fullAddress, // Rua, Número - Bairro
         city: formData.city,
         state: formData.state,
         instagram: formData.instagram,
@@ -136,7 +90,7 @@ export const BarbershopSetupModal: React.FC<BarbershopSetupModalProps> = ({ isOp
         <div className="sticky top-0 bg-slate-900 border-b border-slate-800 p-4">
           <h2 className="text-xl font-bold text-slate-100">Configure sua Barbearia</h2>
           <p className="text-sm text-slate-400 mt-1">
-            Completa os dados para que seus clientes conheçam melhor seu negócio
+            Complete os dados para que seus clientes conheçam melhor seu negócio
           </p>
         </div>
 
@@ -170,60 +124,57 @@ export const BarbershopSetupModal: React.FC<BarbershopSetupModalProps> = ({ isOp
             />
           </div>
 
-          {/* Localização com Autocomplete */}
-          <div className="relative" ref={suggestionsRef}>
+          {/* Endereço Manual */}
+          <div>
             <label className="text-sm font-medium text-slate-300 block mb-2">
-              Localização *
+              Endereço (Rua, Número) *
             </label>
             <input
               type="text"
               value={formData.address}
-              onChange={(e) => handleAddressChange(e.target.value)}
-              onFocus={() => formData.address && setShowSuggestions(true)}
-              placeholder="Digite o nome da rua..."
+              onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+              placeholder="Ex: Rua das Flores, 123"
               className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
-
-            {/* Sugestões */}
-            {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg overflow-hidden z-10">
-                {suggestions.map((suggestion, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => selectSuggestion(suggestion)}
-                    className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 transition-colors"
-                  >
-                    <p className="font-medium">{suggestion.address}</p>
-                    <p className="text-xs text-slate-500">{suggestion.city}, {suggestion.state}</p>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
-          {/* Cidade e Estado (read-only) */}
-          {formData.city && (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-sm font-medium text-slate-300 block mb-2">Cidade</label>
-                <input
-                  type="text"
-                  value={formData.city}
-                  disabled
-                  className="w-full bg-slate-700/30 border border-slate-700 rounded-lg px-3 py-2 text-slate-400 cursor-not-allowed"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-slate-300 block mb-2">Estado</label>
-                <input
-                  type="text"
-                  value={formData.state}
-                  disabled
-                  className="w-full bg-slate-700/30 border border-slate-700 rounded-lg px-3 py-2 text-slate-400 cursor-not-allowed"
-                />
-              </div>
+          <div>
+            <label className="text-sm font-medium text-slate-300 block mb-2">
+              Bairro *
+            </label>
+            <input
+              type="text"
+              value={formData.neighborhood}
+              onChange={(e) => setFormData(prev => ({ ...prev, neighborhood: e.target.value }))}
+              placeholder="Ex: Centro"
+              className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            />
+          </div>
+
+          {/* Cidade e Estado */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-sm font-medium text-slate-300 block mb-2">Cidade *</label>
+              <input
+                type="text"
+                value={formData.city}
+                onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                placeholder="Ex: São Paulo"
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              />
             </div>
-          )}
+            <div>
+              <label className="text-sm font-medium text-slate-300 block mb-2">Estado *</label>
+              <input
+                type="text"
+                value={formData.state}
+                onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value.toUpperCase() }))}
+                placeholder="UF"
+                maxLength={2}
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 uppercase"
+              />
+            </div>
+          </div>
 
           {/* Redes Sociais */}
           <div className="border-t border-slate-700 pt-4">

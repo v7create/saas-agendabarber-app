@@ -4,6 +4,8 @@ import { Icon } from './Icon';
 import { MOCK_NOTIFICATIONS } from '../constants';
 import { NotificationsPanel } from './NotificationsPanel';
 import { useAuth } from '@/hooks/useAuth';
+import { useBarbershop } from '@/hooks/useBarbershop';
+import { useAuthStore } from '@/store/auth.store';
 
 interface HeaderProps {
     title: string;
@@ -16,6 +18,13 @@ export const Header: React.FC<HeaderProps> = ({ title, onMenuClick }) => {
     const notificationsRef = useRef<HTMLDivElement>(null);
     const profileRef = useRef<HTMLDivElement>(null);
     const { logout } = useAuth();
+    
+    // Data hooks
+    const { shopInfo } = useBarbershop({ autoFetch: true });
+    const { user } = useAuthStore();
+
+    const shopName = shopInfo?.name || 'Minha Barbearia';
+    const userEmail = user?.email || 'email@exemplo.com';
 
     const unreadCount = MOCK_NOTIFICATIONS.filter(n => !n.read).length;
 
@@ -105,8 +114,8 @@ export const Header: React.FC<HeaderProps> = ({ title, onMenuClick }) => {
                         <div className="absolute right-0 mt-2 w-56 bg-slate-800 rounded-lg shadow-xl shadow-black/50 border border-slate-700 overflow-hidden z-30">
                             {/* Header do Menu */}
                             <div className="px-4 py-3 border-b border-slate-700 bg-slate-900">
-                                <p className="text-sm text-slate-400">André Barber</p>
-                                <p className="text-xs text-slate-500">teste@barberia.com</p>
+                                <p className="text-sm font-medium text-slate-200 truncate">{shopName}</p>
+                                <p className="text-xs text-slate-500 truncate">{userEmail}</p>
                             </div>
                             
                             {/* Menu Items */}

@@ -25,6 +25,8 @@ import { useUIStore } from './store/ui.store';
 // Inicializa Firebase App Check para proteção contra abuso
 import './lib/firebase-app-check';
 
+import { ToastContainer } from './components/ToastContainer';
+
 
 const pageTitles: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -136,6 +138,9 @@ const App: React.FC = () => {
           <p className="text-sm text-slate-400">Bem-vindo de volta!</p>
         </div>
       )}
+
+      {/* Global Toasts */}
+      <ToastContainer />
 
       {/* Setup Modal for New Users */}
       {isNewUser && (
