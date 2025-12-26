@@ -93,16 +93,16 @@ const App: React.FC = () => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
-      
+
       // Show toast on login
       if (currentUser) {
         setShowLoginToast(true);
         setTimeout(() => setShowLoginToast(false), 3000);
-        
+
         // Detecta se é novo usuário pela metadata
         const creationTime = currentUser.metadata?.creationTime;
         const lastSignInTime = currentUser.metadata?.lastSignInTime;
-        
+
         // Se foi criado nos últimos 5 segundos, é um novo usuário
         if (creationTime && lastSignInTime && creationTime === lastSignInTime) {
           setIsNewUser(true);
@@ -116,27 +116,27 @@ const App: React.FC = () => {
         setShowSetupModal(false);
       }
     });
-    
+
     return () => unsubscribe();
   }, [setUser, setLoading]);
 
   if (loading) {
     return (
-        <div className="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center">
-            <p>Carregando...</p>
-        </div>
+      <div className="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center">
+        <p>Carregando...</p>
+      </div>
     );
   }
 
   return (
     <div className="bg-slate-950 text-slate-100 min-h-screen">
-       {showLoginToast && (
+      {showLoginToast && (
         <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-800 border border-slate-700 text-white px-6 py-3 rounded-lg shadow-2xl shadow-violet-500/20 animate-fade-in-down">
           <p className="font-bold">Login realizado!</p>
           <p className="text-sm text-slate-400">Bem-vindo de volta!</p>
         </div>
       )}
-      
+
       {/* Setup Modal for New Users */}
       {isNewUser && (
         <BarbershopSetupModal
@@ -144,12 +144,12 @@ const App: React.FC = () => {
           onClose={() => setShowSetupModal(false)}
         />
       )}
-      
+
       <HashRouter>
         <Routes>
-          <Route path="/login" element={ user ? <Navigate to="/dashboard" /> : <LoginPage /> } />
+          <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
           <Route path="/booking" element={<BookingPage />} />
-          <Route path="/*" element={ user ? <AppContent /> : <Navigate to="/login" /> } />
+          <Route path="/*" element={user ? <AppContent /> : <Navigate to="/login" />} />
         </Routes>
       </HashRouter>
     </div>
