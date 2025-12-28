@@ -62,7 +62,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleImageSave = (url: string | null) => {
+  const handleImageSave = async (url: string | null) => {
     setFormData(prev => ({ ...prev, imageUrl: url || '' }));
   };
 

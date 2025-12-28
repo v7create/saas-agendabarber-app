@@ -181,11 +181,17 @@ export const ProfessionalFormModal: React.FC<ProfessionalFormModalProps> = ({
             {/* Foto */}
             <div className="flex flex-col items-center">
               <div className="relative">
-                <img
-                  src={formData.avatarUrl || `https://i.pravatar.cc/150?u=barber`}
-                  alt="Avatar"
-                  className="w-24 h-24 rounded-full object-cover border-4 border-slate-800"
-                />
+                {formData.avatarUrl ? (
+                  <img
+                    src={formData.avatarUrl}
+                    alt="Avatar"
+                    className="w-24 h-24 rounded-full object-cover border-4 border-slate-800"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-full border-4 border-slate-800 bg-slate-800 flex items-center justify-center">
+                    <Icon name="user" className="w-8 h-8 text-slate-600" />
+                  </div>
+                )}
                 <button
                   onClick={() => setShowAvatarModal(true)}
                   className="absolute bottom-0 right-0 bg-violet-600 text-white p-2 rounded-full hover:bg-violet-700 transition-colors"

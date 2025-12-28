@@ -155,11 +155,17 @@ export const ProfilePage: React.FC = () => {
       <div className="-m-4">
         {/* Cover Image */}
         <div className="relative h-48 group cursor-pointer" onClick={() => setShowCoverModal(true)}>
-          <img
-            src={shopInfo?.coverImageUrl || 'https://images.unsplash.com/photo-1599351431202-1810c26a87c3?q=80&w=1974&auto=format&fit=crop'}
-            alt="Capa da Barbearia"
-            className="w-full h-full object-cover"
-          />
+          {shopInfo?.coverImageUrl ? (
+            <img
+              src={shopInfo.coverImageUrl}
+              alt="Capa da Barbearia"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-slate-800 flex items-center justify-center">
+              <Icon name="image" className="w-12 h-12 text-slate-700" />
+            </div>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
 
           {/* Edit Cover Button */}
@@ -176,11 +182,17 @@ export const ProfilePage: React.FC = () => {
               e.stopPropagation();
               setShowLogoModal(true);
             }}>
-              <img
-                src={shopInfo?.logoUrl || 'https://i.pravatar.cc/150?u=barbershop'}
-                alt="Logo da Barbearia"
-                className="w-24 h-24 rounded-full border-4 border-slate-900 object-cover"
-              />
+              {shopInfo?.logoUrl ? (
+                <img
+                  src={shopInfo.logoUrl}
+                  alt="Logo da Barbearia"
+                  className="w-24 h-24 rounded-full border-4 border-slate-900 object-cover"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full border-4 border-slate-900 bg-slate-800 flex items-center justify-center">
+                  <Icon name="image" className="w-8 h-8 text-slate-600" />
+                </div>
+              )}
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/logo:opacity-100 transition-opacity rounded-full flex items-center justify-center">
                 <Icon name="camera" className="w-6 h-6 text-white" />
               </div>

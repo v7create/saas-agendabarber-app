@@ -125,7 +125,7 @@ export const ComboFormModal: React.FC<ComboFormModalProps> = ({
     }
   };
 
-  const handleImageSave = (url: string | null) => {
+  const handleImageSave = async (url: string | null) => {
     setFormData(prev => ({ ...prev, imageUrl: url || '' }));
   };
 

@@ -6,10 +6,13 @@
  * - Preview da imagem selecionada
  * - Opção de remover imagem
  * - Suporte para diferentes aspect ratios (capa 16:9, logo 1:1)
+ * - Compressão automática de imagens
+ * - Limite de 10MB
  */
 
 import React, { useState, useRef } from 'react';
 import { Icon } from '@/components/Icon';
+import { compressImage } from '@/lib/image';
 
 interface ImageUploadModalProps {
   isOpen: boolean;
@@ -34,7 +37,7 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       // Validar tipo de arquivo
@@ -43,18 +46,27 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
         return;
       }
 
-      // Validar tamanho (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('A imagem deve ter no máximo 5MB');
+      // Validar tamanho (max 10MB)
+      const MAX_SIZE = 10 * 1024 * 1024;
+      if (file.size > MAX_SIZE) {
+        alert('A imagem deve ter no máximo 10MB');
         return;
       }
 
-      // Criar preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setLoading(true);
+      try {
+        // Define dimensões baseadas no aspect ratio
+        const maxWidth = aspectRatio === 'cover' ? 1920 : 800;
+        const maxHeight = aspectRatio === 'cover' ? 1080 : 800;
+        
+        const compressedBase64 = await compressImage(file, maxWidth, maxHeight);
+        setPreviewUrl(compressedBase64);
+      } catch (error) {
+        console.error('Erro ao processar imagem:', error);
+        alert('Erro ao processar imagem. Tente novamente.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -112,7 +124,12 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
               aspectRatio === 'cover' ? 'aspect-video' : 'aspect-square'
             }`}
           >
-            {previewUrl ? (
+            {loading ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600 mb-2"></div>
+                <p className="text-sm">Processando imagem...</p>
+              </div>
+            ) : previewUrl ? (
               <>
                 <img
                   src={previewUrl}
@@ -147,7 +164,8 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
           <div className="flex gap-2">
             <button
               onClick={handleSelectImage}
-              className="flex-1 px-4 py-2 bg-violet-600 text-white font-medium rounded-lg hover:bg-violet-700 transition-colors flex items-center justify-center gap-2"
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-violet-600 text-white font-medium rounded-lg hover:bg-violet-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Icon name="upload" className="w-5 h-5" />
               {previewUrl ? 'Alterar Imagem' : 'Selecionar Imagem'}
@@ -157,7 +175,7 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
           {/* Info */}
           <div className="text-xs text-slate-500 space-y-1">
             <p>• Formatos aceitos: JPG, PNG, GIF</p>
-            <p>• Tamanho máximo: 5MB</p>
+            <p>• Tamanho máximo: 10MB</p>
             {aspectRatio === 'cover' && <p>• Recomendado: 1920x1080 ou similar (16:9)</p>}
             {aspectRatio === 'square' && <p>• Recomendado: 500x500 ou similar (1:1)</p>}
           </div>
@@ -167,6 +185,7 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
         <div className="flex gap-2 p-4 border-t border-slate-800">
           <button
             onClick={handleClose}
+            disabled={loading}
             className="flex-1 px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 font-medium hover:bg-slate-700 transition-colors"
           >
             Cancelar
