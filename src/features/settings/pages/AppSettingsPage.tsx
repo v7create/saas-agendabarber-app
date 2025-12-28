@@ -135,7 +135,7 @@ export const AppSettingsPage: React.FC = () => {
   };
 
   const handleOpenSupport = () => {
-    window.open('https://wa.me/5511999999999?text=Olá, preciso de ajuda com o AgendaBarber', '_blank');
+    window.open('https://wa.me/5511999999999?text=Olá, preciso de ajuda com o AgendaBarber', '_blank', 'noopener,noreferrer');
   };
 
   const handleOpenPrivacy = () => {

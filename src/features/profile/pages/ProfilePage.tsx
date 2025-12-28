@@ -118,7 +118,7 @@ export const ProfilePage: React.FC = () => {
 
   const handleOpenPhone = () => {
     if (shopInfo?.phone) {
-      window.open(`https://wa.me/${shopInfo.phone.replace(/\D/g, '')}`, '_blank');
+      window.open(`https://wa.me/${shopInfo.phone.replace(/\D/g, '')}`, '_blank', 'noopener,noreferrer');
     }
   };
 
