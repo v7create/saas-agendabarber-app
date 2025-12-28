@@ -61,7 +61,12 @@ export const Header: React.FC<HeaderProps> = ({ title, onMenuClick }) => {
                              </span>
                         )}
                     </button>
-                    {isNotificationsOpen && <NotificationsPanel notifications={MOCK_NOTIFICATIONS} />}
+                    {isNotificationsOpen && (
+                        <NotificationsPanel 
+                            notifications={MOCK_NOTIFICATIONS} 
+                            onClose={() => setIsNotificationsOpen(false)} 
+                        />
+                    )}
                  </div>
 
                  {/* Profile Menu */}
