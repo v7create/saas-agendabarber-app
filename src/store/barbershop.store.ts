@@ -77,6 +77,23 @@ export interface BarbershopSettings {
     instagram?: string;
     facebook?: string;
     website?: string;
+    // Website Settings
+    slug?: string;
+    theme?: {
+        primaryColor: string;
+        secondaryColor: string;
+        font: string;
+        mode?: 'light' | 'dark';
+    };
+    layout?: {
+        showHero: boolean;
+        heroTitle: string;
+        heroSubtitle?: string;
+        heroImage?: string;
+        showAbout: boolean;
+        aboutText?: string;
+        aboutImage?: string;
+    };
   };
 }
 

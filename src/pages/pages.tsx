@@ -991,8 +991,7 @@ const ClientCard: React.FC<{client: Client}> = ({ client }) => {
                 Última visita: {client.lastVisit}
             </div>
             <div className="flex items-center space-x-1 text-yellow-400 mt-2">
-                {[...Array(5)].map((_, i) => <Icon key={i} name="star" className={`w-5 h-5 ${i < Math.round(client.rating) ? 'fill-current' : ''}`} />)}
-                <span className="text-slate-400 text-sm ml-1">({client.rating.toFixed(1)})</span>
+{/* Rating removido pois não existe no tipo Client ainda */}
             </div>
             <div className="mt-4 pt-4 border-t border-slate-700 grid grid-cols-2 gap-4 text-sm">
                 <div>

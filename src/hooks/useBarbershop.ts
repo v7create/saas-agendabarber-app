@@ -41,7 +41,7 @@
 
 import { useEffect } from 'react';
 import { useBarbershopStore } from '@/store/barbershop.store';
-import type { Barber } from '@/types';
+import { Barbershop, WorkingHours } from '@/types';
 
 interface UseBarbershopOptions {
   /**
@@ -106,27 +106,44 @@ export function useBarbershop(options: UseBarbershopOptions = {}) {
       const currentDay = now.getDay(); // 0-6
       const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
-      // Verifica se hoje é dia de funcionamento
-      if (!businessHours.daysOfWeek.includes(currentDay)) {
+      // Encontra a configuração para o dia atual
+      const todaySchedule = businessHours.schedule.find(s => s.dayOfWeek === currentDay);
+
+      // Se não tem schedule ou não está aberto hoje
+      if (!todaySchedule || !todaySchedule.isOpen) {
+        return false;
+      }
+
+      // Se não tem horário definido, assume fechado
+      if (!todaySchedule.startTime || !todaySchedule.endTime) {
         return false;
       }
 
       // Verifica horário
-      return currentTime >= businessHours.opening && currentTime <= businessHours.closing;
+      return currentTime >= todaySchedule.startTime && currentTime <= todaySchedule.endTime;
     },
 
     /**
      * Verifica se barbearia abre em um dia específico
      */
     isOpenOnDay: (dayOfWeek: number) => {
-      return businessHours.daysOfWeek.includes(dayOfWeek);
+      const schedule = businessHours.schedule.find(s => s.dayOfWeek === dayOfWeek);
+      return schedule ? schedule.isOpen : false;
     },
 
     /**
-     * Retorna horário formatado
+     * Retorna horário formatado de hoje
      */
     getFormattedHours: () => {
-      return `${businessHours.opening} - ${businessHours.closing}`;
+      const now = new Date();
+      const currentDay = now.getDay();
+      const todaySchedule = businessHours.schedule.find(s => s.dayOfWeek === currentDay);
+
+      if (!todaySchedule || !todaySchedule.isOpen || !todaySchedule.startTime || !todaySchedule.endTime) {
+        return 'Fechado';
+      }
+
+      return `${todaySchedule.startTime} - ${todaySchedule.endTime}`;
     },
 
     /**
@@ -134,9 +151,9 @@ export function useBarbershop(options: UseBarbershopOptions = {}) {
      */
     getWorkingDaysText: () => {
       const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-      return businessHours.daysOfWeek
-        .sort()
-        .map(d => dayNames[d])
+      return businessHours.schedule
+        .filter(s => s.isOpen)
+        .map(s => dayNames[s.dayOfWeek])
         .join(', ');
     },
 
@@ -156,7 +173,7 @@ export function useBarbershop(options: UseBarbershopOptions = {}) {
       return {
         totalBarbers: barbers.length,
         totalPaymentMethods: paymentMethods.length,
-        workingDays: businessHours.daysOfWeek.length,
+        workingDays: businessHours.schedule.filter(s => s.isOpen).length,
         isConfigured: barbers.length > 0 && shopInfo.name.trim() !== '',
       };
     },
@@ -194,7 +211,7 @@ export function useBarbershop(options: UseBarbershopOptions = {}) {
       if (paymentMethods.length === 0) {
         issues.push('Nenhum método de pagamento cadastrado');
       }
-      if (businessHours.daysOfWeek.length === 0) {
+      if (businessHours.schedule.filter(s => s.isOpen).length === 0) {
         issues.push('Nenhum dia de funcionamento configurado');
       }
 

@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from './Icon';
-import { MOCK_NOTIFICATIONS } from '../constants';
 import { NotificationsPanel } from './NotificationsPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useBarbershop } from '@/hooks/useBarbershop';
 import { useAuthStore } from '@/store/auth.store';
+import { useNotifications } from '@/hooks/useNotifications';
 
 interface HeaderProps {
     title: string;
@@ -22,11 +22,10 @@ export const Header: React.FC<HeaderProps> = ({ title, onMenuClick }) => {
     // Data hooks
     const { shopInfo } = useBarbershop({ autoFetch: true });
     const { user } = useAuthStore();
+    const { unreadCount } = useNotifications({ autoStart: true });
 
     const shopName = shopInfo?.name || 'Minha Barbearia';
     const userEmail = user?.email || 'email@exemplo.com';
-
-    const unreadCount = MOCK_NOTIFICATIONS.filter(n => !n.read).length;
 
     // Close notifications and profile panel on click outside
     useEffect(() => {
@@ -63,7 +62,6 @@ export const Header: React.FC<HeaderProps> = ({ title, onMenuClick }) => {
                     </button>
                     {isNotificationsOpen && (
                         <NotificationsPanel 
-                            notifications={MOCK_NOTIFICATIONS} 
                             onClose={() => setIsNotificationsOpen(false)} 
                         />
                     )}

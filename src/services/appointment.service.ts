@@ -8,13 +8,38 @@
  * - Atualizar status do agendamento
  */
 
-import { where, Timestamp } from 'firebase/firestore';
+import { where, Timestamp, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { BaseService } from './base.service';
-import { Appointment, AppointmentStatus } from '@/types';
+import { Appointment, AppointmentStatus, NotificationType } from '@/types';
+import { db, auth } from '@/firebase';
 
 export class AppointmentService extends BaseService<Appointment> {
   constructor() {
     super('appointments');
+  }
+
+  /**
+   * Helper privado para criar notificação
+   */
+  private async createNotification(title: string, description: string, type: NotificationType) {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const now = new Date();
+      const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+      await addDoc(collection(db, 'barbershops', user.uid, 'notifications'), {
+        title,
+        description,
+        type,
+        time,
+        read: false,
+        createdAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Erro ao criar notificação automática:', error);
+    }
   }
 
   /**
@@ -101,6 +126,28 @@ export class AppointmentService extends BaseService<Appointment> {
   async updateStatus(id: string, status: AppointmentStatus): Promise<void> {
     try {
       await this.update(id, { status });
+
+      // Notificar sobre cancelamento
+      if (status === AppointmentStatus.Cancelled) {
+        // Tentar buscar detalhes do agendamento para mensagem mais rica
+        try {
+          const appointment = await this.getById(id);
+          if (appointment) {
+            await this.createNotification(
+              'Agendamento Cancelado',
+              `O agendamento de ${appointment.clientName} foi cancelado.`,
+              NotificationType.NewAppointment // Usando tipo genérico por enquanto ou criar um específico
+            );
+          }
+        } catch (e) {
+          // Fallback se não conseguir buscar
+          await this.createNotification(
+            'Agendamento Cancelado',
+            `Um agendamento foi marcado como cancelado.`,
+            NotificationType.NewAppointment
+          );
+        }
+      }
     } catch (error) {
       console.error('Erro ao atualizar status do agendamento:', error);
       throw error;

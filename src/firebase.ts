@@ -4,6 +4,7 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 import { getPerformance } from "firebase/performance";
+import { getMessaging } from "firebase/messaging";
 
 // ============================================
 // VALIDAÇÃO DE VARIÁVEIS DE AMBIENTE
@@ -58,6 +59,9 @@ export const auth = getAuth(app);
 
 // Initialize Firestore
 export const db = getFirestore(app);
+
+// Initialize Messaging
+export const messaging = getMessaging(app);
 
 // Initialize Google Auth Provider
 export const googleProvider = new GoogleAuthProvider();

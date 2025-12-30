@@ -16,7 +16,7 @@ service cloud.firestore {
     }
 
     function isValidPhone(phone) {
-      return phone.matches('^\\([0-9]{2}\\) [0-9]{4,5}-[0-9]{4}$');
+      return phone.size() >= 8;
     }
 
     function isValidDate(date) {
@@ -62,9 +62,9 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
 
       match /appointments/{appointmentId} {
-        allow read: if isOwner(userId);
+        allow read: if true;
         
-        allow create: if isOwner(userId) &&
+        allow create: if true &&
           request.resource.data.keys().hasAll(['clientName', 'clientPhone', 'date', 'startTime', 'status', 'createdAt']) &&
           request.resource.data.clientName.size() >= 3 &&
           request.resource.data.clientName.size() <= 100 &&
@@ -83,6 +83,11 @@ service cloud.firestore {
           isValidAppointmentStatus(request.resource.data.status);
         
         allow delete: if isOwner(userId);
+      }
+
+      match /notifications/{notificationId} {
+        allow create: if true;
+        allow read, update, delete: if isOwner(userId);
       }
 
       match /clients/{clientId} {
@@ -186,6 +191,12 @@ service cloud.firestore {
     match /metadata/{userId}/stats/{statId} {
       allow read: if isOwner(userId);
       allow write: if isOwner(userId);
+    }
+
+    match /public_shops/{slug} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
     }
   }
 }

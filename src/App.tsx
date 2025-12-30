@@ -1,7 +1,7 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, useLocation, Navigate, Outlet } from 'react-router-dom';
 import { LoginPage } from './features/auth';
 import { BookingPage } from './features/booking';
 import { DashboardPage } from './features/dashboard';
@@ -10,9 +10,10 @@ import { FinancialPage } from './features/financial';
 import { AppointmentsPage } from './features/appointments';
 import { AgendaPage } from './features/agenda';
 import { ProfilePage } from './features/profile';
-import { ShopSettingsPage, ServicesSettingsPage, AppSettingsPage } from './features/settings';
+import { ShopSettingsPage, ServicesSettingsPage, AppSettingsPage, WebsiteSettingsPage } from './features/settings';
 import { HistoryPage } from './features/history';
 import { Layout } from './components/Layout';
+import { PublicShopPage } from '@/features/public-shop';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { Sidebar } from './components/Sidebar';
@@ -26,6 +27,7 @@ import { useUIStore } from './store/ui.store';
 import './lib/firebase-app-check';
 
 import { ToastContainer } from './components/ToastContainer';
+import { useFCM } from '@/hooks/useFCM';
 
 
 const pageTitles: { [key: string]: string } = {
@@ -38,10 +40,12 @@ const pageTitles: { [key: string]: string } = {
   '/profile': 'Perfil da Empresa',
   '/settings-shop': 'Configurações da Barbearia',
   '/settings-services': 'Serviços',
+  '/settings-website': 'Site de Agendamento',
   '/settings-app': 'Configurações',
 };
 
-const AppContent = () => {
+const AuthenticatedLayout = () => {
+  const { user } = useAuthStore();
   const location = useLocation();
   const [title, setTitle] = useState('Dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -61,25 +65,15 @@ const AppContent = () => {
     };
   }, [isSidebarOpen]);
 
+  if (!user) return <Navigate to="/login" />;
+
   return (
     <Layout
       header={<Header title={title} onMenuClick={() => setIsSidebarOpen(true)} />}
       bottomNav={<BottomNav />}
       sidebar={<Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />}
     >
-      <Routes>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/appointments" element={<AppointmentsPage />} />
-        <Route path="/agenda" element={<AgendaPage />} />
-        <Route path="/clients" element={<ClientsPage />} />
-        <Route path="/financial" element={<FinancialPage />} />
-        <Route path="/history" element={<HistoryPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/settings-shop" element={<ShopSettingsPage />} />
-        <Route path="/settings-services" element={<ServicesSettingsPage />} />
-        <Route path="/settings-app" element={<AppSettingsPage />} />
-        <Route path="*" element={<Navigate to="/dashboard" />} />
-      </Routes>
+      <Outlet />
     </Layout>
   );
 };
@@ -90,6 +84,9 @@ const App: React.FC = () => {
   const [showLoginToast, setShowLoginToast] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
+  
+  // Hook de Notificações
+  const { requestPermissionAndGetToken } = useFCM();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -100,6 +97,9 @@ const App: React.FC = () => {
       if (currentUser) {
         setShowLoginToast(true);
         setTimeout(() => setShowLoginToast(false), 3000);
+
+        // Inicializa o sistema de notificações (solicita permissão e registra token)
+        requestPermissionAndGetToken();
 
         // Detecta se é novo usuário pela metadata
         const creationTime = currentUser.metadata?.creationTime;
@@ -154,7 +154,26 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
           <Route path="/booking" element={<BookingPage />} />
-          <Route path="/*" element={user ? <AppContent /> : <Navigate to="/login" />} />
+          
+          {/* Rotas Internas Protegidas */}
+          <Route element={<AuthenticatedLayout />}>
+             <Route path="/dashboard" element={<DashboardPage />} />
+             <Route path="/appointments" element={<AppointmentsPage />} />
+             <Route path="/agenda" element={<AgendaPage />} />
+             <Route path="/clients" element={<ClientsPage />} />
+             <Route path="/financial" element={<FinancialPage />} />
+             <Route path="/history" element={<HistoryPage />} />
+             <Route path="/profile" element={<ProfilePage />} />
+             <Route path="/settings-shop" element={<ShopSettingsPage />} />
+             <Route path="/settings-services" element={<ServicesSettingsPage />} />
+             <Route path="/settings-website" element={<WebsiteSettingsPage />} />
+             <Route path="/settings-app" element={<AppSettingsPage />} />
+             {/* Root Redirect */}
+             <Route path="/" element={<Navigate to="/dashboard" />} />
+          </Route>
+
+          {/* Rota Pública da Barbearia (Slug) */}
+          <Route path="/:slug" element={<PublicShopPage />} />
         </Routes>
       </HashRouter>
     </div>

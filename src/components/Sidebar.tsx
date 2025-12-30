@@ -24,6 +24,7 @@ const settingsNavItems = [
     { path: '/profile', icon: 'user', label: 'Perfil da Empresa' },
     { path: '/settings-shop', icon: 'scissors', label: 'Configurações da Barbearia' },
     { path: '/settings-services', icon: 'receipt', label: 'Serviços' },
+    { path: '/settings-website', icon: 'globe', label: 'Site de Agendamento' },
     { path: '/settings-app', icon: 'settings', label: 'Configurações' },
 ];
 

@@ -105,3 +105,83 @@ export interface Notification {
     time: string; 
     read: boolean;
 }
+
+export interface Barbershop {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  address: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  website?: string;
+  instagram?: string;
+  facebook?: string;
+  logoUrl?: string;
+  coverImageUrl?: string;
+  description?: string;
+  username?: string;
+  defaultPaymentMethod?: string;
+  slug?: string;
+  theme?: {
+      primaryColor: string;
+      secondaryColor: string;
+      font: string;
+      mode?: 'light' | 'dark';
+  };
+  layout?: {
+      showHero: boolean;
+      heroTitle: string;
+      heroSubtitle?: string;
+      heroImage?: string;
+      showAbout: boolean;
+      aboutText?: string;
+      aboutImage?: string;
+  };
+}
+
+export interface WorkingHours {
+  schedule: DaySchedule[];
+}
+
+export interface DaySchedule {
+  dayOfWeek: number;
+  isOpen: boolean;
+  startTime: string;
+  endTime: string;
+  hasLunchBreak: boolean;
+  lunchStart: string;
+  lunchDuration: number;
+}
+
+export interface PublicShopData {
+    ownerId: string;
+    name: string;
+    phone: string;
+    address: string;
+    logoUrl?: string;
+    slug: string;
+    theme: {
+        primaryColor: string;
+        secondaryColor: string;
+        font: string;
+      mode?: 'light' | 'dark';
+    };
+    layout: {
+        showHero: boolean;
+        heroTitle: string;
+        heroSubtitle?: string;
+        heroImage?: string;
+        showAbout: boolean;
+        aboutText?: string;
+        aboutImage?: string;
+    };
+    catalog: Service[];
+    team: Barber[];
+    businessHours: WorkingHours;
+    instagram?: string;
+    facebook?: string;
+    website?: string;
+    updatedAt: string;
+}
